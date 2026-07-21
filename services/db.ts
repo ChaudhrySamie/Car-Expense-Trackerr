@@ -1,5 +1,6 @@
 import { db, storage } from './firebase';
 import firebase from 'firebase/compat/app';
+import { useStore } from '../context/useStore';
 
 // === Cars Collection ===
 const CARS_COLLECTION = 'cars';
@@ -72,11 +73,15 @@ export const updateCarInDb = async (carId: string, carData: any) => {
 };
 
 export const deleteCarFromDb = async (carId: string) => {
+  const { startDeleting, stopDeleting } = useStore.getState();
+  startDeleting();
   try {
     await db.collection(CARS_COLLECTION).doc(carId).delete();
   } catch (error) {
     console.error("Error deleting car: ", error);
     throw error;
+  } finally {
+    stopDeleting();
   }
 };
 
@@ -94,6 +99,15 @@ export interface Expense {
   oilGrade?: string;
   company?: string;
   currentMileage?: string;
+  brand?: string;
+  viscosity?: string;
+  workshop?: string;
+  filterBrand?: string;
+  // Fuel specific
+  liters?: number;
+  pricePerLiter?: number;
+  odometer?: number;
+  isFullTank?: boolean;
   // Shared
   createdAt?: any;
 }
@@ -171,6 +185,68 @@ export const subscribeToExpensesByCategory = (carId: string, category: string, c
     }, (error) => {
       console.error("Error subscribing to expenses by category: ", error);
     });
+};
+
+export const updateExpenseInDb = async (expenseId: string, expenseData: any) => {
+  try {
+    await db.collection(EXPENSES_COLLECTION).doc(expenseId).update({
+      ...expenseData,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    return { id: expenseId, ...expenseData };
+  } catch (error) {
+    console.error("Error updating expense: ", error);
+    throw error;
+  }
+};
+
+export const deleteExpenseFromDb = async (expenseId: string) => {
+  const { startDeleting, stopDeleting } = useStore.getState();
+  startDeleting();
+  try {
+    await db.collection(EXPENSES_COLLECTION).doc(expenseId).delete();
+  } catch (error) {
+    console.error("Error deleting expense: ", error);
+    throw error;
+  } finally {
+    stopDeleting();
+  }
+};
+
+export const deleteExpensesByCategory = async (carId: string, category: string) => {
+  const { startDeleting, stopDeleting } = useStore.getState();
+  startDeleting();
+  try {
+    const querySnapshot = await db.collection(EXPENSES_COLLECTION)
+      .where("carId", "==", carId)
+      .where("category", "==", category)
+      .get();
+    
+    const batch = db.batch();
+    querySnapshot.forEach((doc: any) => {
+      batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+  } catch (error) {
+    console.error("Error deleting expenses by category: ", error);
+    throw error;
+  } finally {
+    stopDeleting();
+  }
+};
+
+// === User Activity ===
+export const updateUserActivity = async (userId: string, activity: string) => {
+  if (!userId) return;
+  try {
+    await db.collection('users').doc(userId).update({
+      lastActivity: activity,
+      lastActivityTime: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (error) {
+    console.error("Error updating user activity: ", error);
+  }
 };
 
 // === End of File ===

@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, ViewStyle, Animated } from 'react-native';
+import { StyleSheet, ViewStyle, Animated, StyleProp } from 'react-native';
 import { SHADOWS } from '../../utils/theme';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface AnimatedCardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   delay?: number;
 }
 
@@ -28,8 +29,10 @@ export default function AnimatedCard({ children, style, delay = 0 }: AnimatedCar
     ]).start();
   }, [opacity, translateY, delay]);
 
+  const { colors } = useThemeColors();
+
   return (
-    <Animated.View style={[styles.card, { opacity, transform: [{ translateY }] }, style]}>
+    <Animated.View style={[styles.card, { backgroundColor: colors.surface, opacity, transform: [{ translateY }] }, style]}>
       {children}
     </Animated.View>
   );
@@ -37,7 +40,6 @@ export default function AnimatedCard({ children, style, delay = 0 }: AnimatedCar
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFF',
     borderRadius: 24,
     padding: 20,
     marginBottom: 16,

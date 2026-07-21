@@ -1,17 +1,29 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { COLORS, SPACING } from '../../utils/theme';
+import { TYPOGRAPHY } from '../../utils/theme';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface HeaderProps {
   title: string;
+  subtitle?: string;
   showBack?: boolean;
+  alignLeft?: boolean;
+  leftElement?: React.ReactNode;
   rightElement?: React.ReactNode;
   onBackPress?: () => void;
 }
 
-export default function Header({ title, showBack = true, rightElement, onBackPress }: HeaderProps) {
+export default function Header({ 
+  title, 
+  subtitle, 
+  showBack = true, 
+  alignLeft = false,
+  leftElement,
+  rightElement, 
+  onBackPress 
+}: HeaderProps) {
   const navigation = useNavigation();
 
   const handleBack = () => {
@@ -22,18 +34,37 @@ export default function Header({ title, showBack = true, rightElement, onBackPre
     }
   };
 
+  const { colors } = useThemeColors();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
       <View style={styles.content}>
-        <View style={styles.left}>
-          {showBack && (
-            <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-              <Ionicons name="arrow-back" size={24} color={COLORS.text} />
-            </TouchableOpacity>
+        {(showBack || leftElement) && (
+          <View style={styles.sideColumn}>
+            {showBack ? (
+              <TouchableOpacity onPress={handleBack} style={styles.backBtn} activeOpacity={0.6}>
+                <Ionicons name="arrow-back" size={24} color={colors.text} />
+              </TouchableOpacity>
+            ) : leftElement}
+          </View>
+        )}
+        
+        <View style={[
+          styles.titleContainer, 
+          alignLeft && styles.titleContainerLeft,
+          !(showBack || leftElement) && { marginLeft: 0 }
+        ]}>
+          <Text style={[styles.title, { color: colors.text }, alignLeft && styles.textLeft]} numberOfLines={1} ellipsizeMode="tail">
+            {title}
+          </Text>
+          {subtitle && (
+            <Text style={[styles.subtitle, { color: colors.textSecondary }, alignLeft && styles.textLeft]} numberOfLines={1} ellipsizeMode="tail">
+              {subtitle}
+            </Text>
           )}
         </View>
-        <Text style={styles.title} numberOfLines={1}>{title}</Text>
-        <View style={styles.right}>
+
+        <View style={[styles.sideColumn, { alignItems: 'flex-end' }]}>
           {rightElement || <View style={{ width: 40 }} />}
         </View>
       </View>
@@ -43,35 +74,43 @@ export default function Header({ title, showBack = true, rightElement, onBackPre
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFF',
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    paddingTop: Platform.OS === 'ios' ? 0 : 10,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    zIndex: 10    
   },
   content: {
-    height: 60,
+    height: 64,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
   },
-  left: {
-    width: 50,
-    alignItems: 'flex-start',
+  sideColumn: {
+    width: 48,
+    justifyContent: 'center',
   },
-  right: {
-    width: 50,
-    alignItems: 'flex-end',
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  titleContainerLeft: {
+    alignItems: 'flex-start',
+    marginLeft: 0,
+  },
+  title: {
+    ...TYPOGRAPHY.h3,
+    textAlign: 'center',
+  },
+  subtitle: {
+    ...TYPOGRAPHY.caption,
+    textAlign: 'center',
+    marginTop: -2,
+  },
+  textLeft: {
+    textAlign: 'left',
   },
   backBtn: {
     padding: 8,
     marginLeft: -8,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.text,
-    flex: 1,
-    textAlign: 'center',
   },
 });

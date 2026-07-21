@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
-import { COLORS } from '../../utils/theme';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface AnimatedProgressBarProps {
   percentage: number;
@@ -8,7 +8,8 @@ interface AnimatedProgressBarProps {
   delay?: number;
 }
 
-export default function AnimatedProgressBar({ percentage, color = COLORS.primary, delay = 0 }: AnimatedProgressBarProps) {
+export default function AnimatedProgressBar({ percentage, color, delay = 0 }: AnimatedProgressBarProps) {
+  const { colors, isDarkMode } = useThemeColors();
   const widthAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -27,9 +28,11 @@ export default function AnimatedProgressBar({ percentage, color = COLORS.primary
     outputRange: ['0%', '100%'],
   });
 
+  const barColor = color || colors.primary;
+
   return (
-    <View style={styles.container}>
-      <Animated.View style={[styles.bar, { backgroundColor: color, width }]} />
+    <View style={[styles.container, { backgroundColor: isDarkMode ? colors.border : '#F1F5F9' }]}>
+      <Animated.View style={[styles.bar, { backgroundColor: barColor, width }]} />
     </View>
   );
 }
@@ -37,7 +40,6 @@ export default function AnimatedProgressBar({ percentage, color = COLORS.primary
 const styles = StyleSheet.create({
   container: {
     height: 8,
-    backgroundColor: '#F1F5F9',
     borderRadius: 4,
     overflow: 'hidden',
     width: '100%',

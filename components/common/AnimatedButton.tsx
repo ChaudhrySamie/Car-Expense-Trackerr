@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator, Animated } from 'react-native';
 import { COLORS, SHADOWS, ANIMATIONS } from '../../utils/theme';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface AnimatedButtonProps {
   title: string;
@@ -24,6 +25,7 @@ export default function AnimatedButton({
   type = 'primary' 
 }: AnimatedButtonProps) {
   const scale = useRef(new Animated.Value(1)).current;
+  const { colors, isDarkMode } = useThemeColors();
 
   const onPressIn = () => {
     Animated.spring(scale, {
@@ -40,13 +42,13 @@ export default function AnimatedButton({
   };
 
   const getBgColor = () => {
-    if (disabled) return '#CBD5E1';
+    if (disabled) return isDarkMode ? '#1e293b' : '#CBD5E1';
     switch (type) {
-      case 'primary': return COLORS.primary;
-      case 'secondary': return COLORS.secondary;
-      case 'danger': return COLORS.danger;
+      case 'primary': return colors.primary;
+      case 'secondary': return colors.secondary;
+      case 'danger': return colors.danger;
       case 'ghost': return 'transparent';
-      default: return COLORS.primary;
+      default: return colors.primary;
     }
   };
 
@@ -65,11 +67,11 @@ export default function AnimatedButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={type === 'ghost' ? COLORS.primary : "#FFF"} />
+        <ActivityIndicator color={type === 'ghost' ? colors.primary : (disabled ? colors.textSecondary : "#FFF")} />
       ) : (
         <Text style={[
           styles.text, 
-          { color: type === 'ghost' ? COLORS.primary : "#FFF" },
+          { color: type === 'ghost' ? colors.primary : (disabled ? colors.textSecondary : "#FFF") },
           textStyle
         ]}>
           {title}

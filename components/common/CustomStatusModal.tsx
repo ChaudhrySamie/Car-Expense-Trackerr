@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SHADOWS } from '../../utils/theme';
+import { SHADOWS } from '../../utils/theme';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface CustomStatusModalProps {
   visible: boolean;
@@ -12,6 +13,7 @@ interface CustomStatusModalProps {
 }
 
 export default function CustomStatusModal({ visible, type, title, message, onClose }: CustomStatusModalProps) {
+  const { colors } = useThemeColors();
   const scale = useRef(new Animated.Value(0)).current;
   const shake = useRef(new Animated.Value(0)).current;
 
@@ -41,9 +43,9 @@ export default function CustomStatusModal({ visible, type, title, message, onClo
 
   const getIcon = () => {
     switch (type) {
-      case 'success': return { name: 'checkmark-circle' as any, color: COLORS.success };
-      case 'error': return { name: 'close-circle' as any, color: COLORS.danger };
-      case 'info': return { name: 'information-circle' as any, color: COLORS.primary };
+      case 'success': return { name: 'checkmark-circle' as any, color: colors.success };
+      case 'error': return { name: 'close-circle' as any, color: colors.danger };
+      case 'info': return { name: 'information-circle' as any, color: colors.primary };
     }
   };
 
@@ -52,10 +54,10 @@ export default function CustomStatusModal({ visible, type, title, message, onClo
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <Animated.View style={[styles.content, { transform: [{ scale }, { translateX: shake }] }]}>
+        <Animated.View style={[styles.content, { backgroundColor: colors.surface, borderColor: colors.border, transform: [{ scale }, { translateX: shake }] }]}>
           <Ionicons name={icon.name} size={80} color={icon.color} style={styles.icon} />
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+          <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
           <TouchableOpacity onPress={onClose} style={[styles.btn, { backgroundColor: icon.color }]}>
             <Text style={styles.btnText}>Dismiss</Text>
           </TouchableOpacity>
@@ -68,7 +70,7 @@ export default function CustomStatusModal({ visible, type, title, message, onClo
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    backgroundColor: 'rgba(15, 23, 42, 0.82)', // Deep, premium slate backdrop
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -79,6 +81,8 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     padding: 32,
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#F1F5F9', // Subtle border for definition
     ...SHADOWS.medium,
   },
   icon: {
@@ -87,13 +91,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: COLORS.text,
     marginBottom: 8,
     textAlign: 'center',
   },
   message: {
     fontSize: 16,
-    color: COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
   },

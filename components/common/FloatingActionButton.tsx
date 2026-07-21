@@ -33,7 +33,7 @@ export default function FloatingActionButton({ onPress, icon = 'add' }: FABProps
       onPress={onPress}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
-      style={[styles.fab, { transform: [{ scale }] }]}
+      style={[styles.fab, { transform: [{ scale }] }, { marginBottom: 70 }]}
     >
       <Ionicons name={icon as any} size={32} color="#FFF" />
     </AnimatedTouchableOpacity>
