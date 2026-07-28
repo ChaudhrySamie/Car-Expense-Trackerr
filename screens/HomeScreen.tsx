@@ -352,18 +352,51 @@ export default function HomeScreen() {
             ListHeaderComponent={
               <View>
                 {globalNotifs.map((notif, index) => (
-                  <AnimatedCard key={`global-${index}`} style={[styles.notifBanner, { backgroundColor: isDarkMode ? '#1e293b' : '#EFF6FF', borderColor: isDarkMode ? colors.primary : '#DBEAFE' }]}>
-                    <Ionicons name="megaphone" size={20} color={colors.primary} />
-                    <Text style={[styles.notifBannerText, { color: colors.primary }]}>{notif.message}</Text>
+                  <AnimatedCard
+                    key={`global-${index}`}
+                    style={[
+                      styles.notifBanner,
+                      {
+                        backgroundColor: isDarkMode ? '#1e293b' : '#F0F9FF',
+                        borderColor: isDarkMode ? colors.primary : '#BAE6FD',
+                      },
+                    ]}
+                  >
+                    <View style={[styles.notifIconWrapper, { backgroundColor: isDarkMode ? 'rgba(56, 189, 248, 0.15)' : 'rgba(14, 165, 233, 0.12)' }]}>
+                      <Ionicons name="megaphone-outline" size={20} color={colors.primary} />
+                    </View>
+                    <View style={styles.notifTextContainer}>
+                      <Text style={[styles.notifTag, { color: colors.primary }]}>{t('home.announcement') || 'Announcement'}</Text>
+                      <Text style={[styles.notifMessageText, { color: colors.text }]}>{notif.message}</Text>
+                    </View>
                   </AnimatedCard>
                 ))}
 
                 {userNotifs.map((notif) => (
-                  <AnimatedCard key={notif.id} style={[styles.userNotifBanner, { backgroundColor: isDarkMode ? '#064e3b' : '#F0FDF4', borderColor: isDarkMode ? colors.success : '#BBF7D0' }]}>
-                    <Ionicons name="mail" size={20} color={colors.success} />
-                    <Text style={[styles.notifBannerText, { color: colors.success }]}>{notif.message}</Text>
-                    <TouchableOpacity onPress={() => dismissUserNotif(notif.id)}>
-                      <Ionicons name="close-circle" size={20} color={colors.success} />
+                  <AnimatedCard
+                    key={notif.id}
+                    style={[
+                      styles.notifBanner,
+                      {
+                        backgroundColor: isDarkMode ? '#064e3b' : '#F0FDF4',
+                        borderColor: isDarkMode ? colors.success : '#BBF7D0',
+                      },
+                    ]}
+                  >
+                    <View style={[styles.notifIconWrapper, { backgroundColor: isDarkMode ? 'rgba(52, 211, 153, 0.2)' : 'rgba(16, 185, 129, 0.15)' }]}>
+                      <Ionicons name="mail-unread-outline" size={20} color={colors.success} />
+                    </View>
+                    <View style={styles.notifTextContainer}>
+                      <Text style={[styles.notifTag, { color: colors.success }]}>{t('home.message') || 'Message'}</Text>
+                      <Text style={[styles.notifMessageText, { color: colors.text }]}>{notif.message}</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => dismissUserNotif(notif.id)}
+                      style={[styles.dismissBtn, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(16, 185, 129, 0.15)' }]}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Ionicons name="close" size={16} color={colors.success} />
                     </TouchableOpacity>
                   </AnimatedCard>
                 ))}
@@ -679,24 +712,57 @@ const styles = StyleSheet.create({
   notifBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
+    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 12,
+    borderWidth: 1.5,
+    ...SHADOWS.soft,
   },
   userNotifBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
+    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 12,
+    borderWidth: 1.5,
+    ...SHADOWS.soft,
   },
-  notifBannerText: {
-    ...TYPOGRAPHY.body,
-    marginLeft: 12,
+  notifIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  notifTextContainer: {
     flex: 1,
+    paddingRight: 6,
+  },
+  notifTag: {
+    fontSize: 11,
+    fontWeight: '700' as any,
+    textTransform: 'uppercase' as any,
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  notifMessageText: {
+    ...TYPOGRAPHY.body,
+    fontSize: 14,
+    lineHeight: 20,
     fontWeight: '600' as any,
+  },
+  dismissBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 6,
   },
   carCardContainer: {
     padding: 0,

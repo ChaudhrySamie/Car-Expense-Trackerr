@@ -363,8 +363,10 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    ...TYPOGRAPHY.body,
     fontSize: 14,
+    fontWeight: '400',
+    paddingVertical: 0,
+    textAlignVertical: 'center',
   },
   passwordVisibilityButton: {
     padding: 4,

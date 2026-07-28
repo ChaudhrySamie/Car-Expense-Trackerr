@@ -351,17 +351,17 @@ export default function FuelScreen() {
                     <View style={[styles.refillTypeRow, { backgroundColor: colors.background, padding: 4, borderRadius: 18 }]}>
                       <TouchableOpacity
                         onPress={() => setIsFullTank(false)}
-                        style={[styles.refillOpt, !isFullTank && [styles.refillOptActive, { backgroundColor: colors.primary, borderColor: colors.primary }], { backgroundColor: 'transparent', borderWidth: 0 }]}
+                        style={[styles.refillOpt, !isFullTank ? { backgroundColor: colors.primary } : { backgroundColor: 'transparent' }]}
                       >
                         <Ionicons name="water-outline" size={18} color={!isFullTank ? '#FFF' : colors.textSecondary} />
-                        <Text style={[styles.refillOptText, { color: colors.textSecondary }, !isFullTank && { color: '#FFF' }]}>{t('fuel.partial')}</Text>
+                        <Text style={[styles.refillOptText, { color: !isFullTank ? '#FFF' : colors.textSecondary }]}>{t('fuel.partial')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => setIsFullTank(true)}
-                        style={[styles.refillOpt, isFullTank && [styles.refillOptActive, { backgroundColor: colors.primary, borderColor: colors.primary }], { backgroundColor: 'transparent', borderWidth: 0 }]}
+                        style={[styles.refillOpt, isFullTank ? { backgroundColor: colors.primary } : { backgroundColor: 'transparent' }]}
                       >
                         <Ionicons name="color-fill-outline" size={18} color={isFullTank ? '#FFF' : colors.textSecondary} />
-                        <Text style={[styles.refillOptText, { color: colors.textSecondary }, isFullTank && { color: '#FFF' }]}>{t('fuel.full_tank')}</Text>
+                        <Text style={[styles.refillOptText, { color: isFullTank ? '#FFF' : colors.textSecondary }]}>{t('fuel.full_tank')}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>

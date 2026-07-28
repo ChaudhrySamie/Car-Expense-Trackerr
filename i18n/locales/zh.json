@@ -18,7 +18,8 @@
     "currency": "货币",
     "success": "成功",
     "error": "错误",
-    "dark_mode": "深色模式"
+    "dark_mode": "深色模式",
+    "please_wait": "请稍候..."
   },
   "categories": {
     "Mechanical": "机械",
@@ -189,7 +190,9 @@
     "empty_title": "车库是空的",
     "empty_subtitle": "添加您的第一辆车以开始跟踪费用和维护。",
     "recent_history": "最近历史",
-    "manage_garage": "管理您的车库车队"
+    "manage_garage": "管理您的车库车队",
+    "announcement": "公告",
+    "message": "消息"
   },
   "car_menu": {
     "dashboard": "仪表板",

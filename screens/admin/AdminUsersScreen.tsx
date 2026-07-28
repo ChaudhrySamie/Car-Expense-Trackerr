@@ -501,7 +501,7 @@ export default function AdminUsersScreen() {
                       <Text style={styles.statLbl}>Records</Text>
                     </View>
                     <View style={styles.statBox}>
-                      <Text style={[styles.statVal, { fontSize: 14 }]}>Rs {userStats.amount.toLocaleString()}</Text>
+                      <Text style={[styles.statVal, { fontSize: 14 }]}>{userStats.amount.toLocaleString()}</Text>
                       <Text style={styles.statLbl}>Expenses</Text>
                     </View>
                   </View>

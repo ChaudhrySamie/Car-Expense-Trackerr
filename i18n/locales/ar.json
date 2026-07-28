@@ -18,7 +18,8 @@
     "currency": "العملة",
     "success": "نجاح",
     "error": "خطأ",
-    "dark_mode": "الوضع الداكن"
+    "dark_mode": "الوضع الداكن",
+    "please_wait": "يرجى الانتظار..."
   },
   "categories": {
     "Mechanical": "ميكانيكي",
@@ -189,7 +190,9 @@
     "empty_title": "الكراج فارغ",
     "empty_subtitle": "أضف مركبتك الأولى لبدء تتبع المصاريف والصيانة.",
     "recent_history": "التاريخ الحديث",
-    "manage_garage": "إدارة أسطول الكراج الخاص بك"
+    "manage_garage": "إدارة أسطول الكراج الخاص بك",
+    "announcement": "إعلان",
+    "message": "رسالة"
   },
   "car_menu": {
     "dashboard": "لوحة القيادة",

@@ -131,7 +131,7 @@ export default function AdminDashboardScreen() {
                     <Ionicons name="cash" size={20} color="#F59E0B" />
                   </View>
                   <Text style={[styles.statValue, { fontSize: 18 }]} numberOfLines={1}>
-                    Rs {stats.totalExpensesAmount.toLocaleString()}
+                     {stats.totalExpensesAmount.toLocaleString()}
                   </Text>
                   <Text style={styles.statLabel}>Total Expenses</Text>
                 </AnimatedCard>

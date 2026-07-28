@@ -19,7 +19,8 @@
     "success": "Success",
     "error": "Error",
     "fill_fields": "Please complete all required fields.",
-    "dark_mode": "Dark Mode"
+    "dark_mode": "Dark Mode",
+    "please_wait": "Please wait..."
   },
   "categories": {
     "Mechanical": "Mechanical",
@@ -195,7 +196,9 @@
     "empty_title": "Garage is empty",
     "empty_subtitle": "Add your first vehicle to start tracking expenses and maintenance.",
     "recent_history": "Recent History",
-    "manage_garage": "Manage your garage fleet"
+    "manage_garage": "Manage your garage fleet",
+    "announcement": "Announcement",
+    "message": "Message"
   },
   "car_menu": {
     "dashboard": "Dashboard",

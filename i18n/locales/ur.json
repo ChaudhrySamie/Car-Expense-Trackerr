@@ -18,7 +18,8 @@
     "currency": "کرنسی",
     "success": "کامیابی",
     "error": "غلطی",
-    "dark_mode": "ڈارک موڈ"
+    "dark_mode": "ڈارک موڈ",
+    "please_wait": "براہ کرم انتظار کریں..."
   },
   "categories": {
     "Mechanical": "مکینیکل",
@@ -189,7 +190,9 @@
     "empty_title": "گیراج خالی ہے",
     "empty_subtitle": "اخراجات اور دیکھ بھال کو ٹریک کرنے کے لیے اپنی پہلی گاڑی شامل کریں۔",
     "recent_history": "حالیہ تاریخ",
-    "manage_garage": "اپنے گیراج کے فلیٹ کا انتظام کریں"
+    "manage_garage": "اپنے گیراج کے فلیٹ کا انتظام کریں",
+    "announcement": "اعلان",
+    "message": "پیغام"
   },
   "car_menu": {
     "dashboard": "ڈیش بورڈ",

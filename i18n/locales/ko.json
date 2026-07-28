@@ -18,7 +18,8 @@
     "currency": "통화",
     "success": "성공",
     "error": "오류",
-    "dark_mode": "다크 모드"
+    "dark_mode": "다크 모드",
+    "please_wait": "잠시만 기다려 주세요..."
   },
   "categories": {
     "Mechanical": "기계",
@@ -189,7 +190,9 @@
     "empty_title": "차고가 비어 있습니다",
     "empty_subtitle": "비용 및 유지 관리를 추적하려면 첫 번째 차량을 추가하세요.",
     "recent_history": "최근 이력",
-    "manage_garage": "차고 관리"
+    "manage_garage": "차고 관리",
+    "announcement": "공지사항",
+    "message": "메시지"
   },
   "car_menu": {
     "dashboard": "대시보드",

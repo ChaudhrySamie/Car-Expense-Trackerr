@@ -272,7 +272,7 @@ export default function OilChangeScreen() {
         <View style={styles.listHeader}>
           <Text style={[styles.listTitle, { color: colors.text }]}>{t('oil.history')}</Text>
           <TouchableOpacity
-            style={styles.addBtnSmall}
+            style={[styles.addBtnSmall, { backgroundColor: colors.primary }]}
             onPress={() => {
               resetForm();
               setIsEditing(false);

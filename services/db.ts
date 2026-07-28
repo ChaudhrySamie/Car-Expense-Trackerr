@@ -76,6 +76,14 @@ export const deleteCarFromDb = async (carId: string) => {
   const { startDeleting, stopDeleting } = useStore.getState();
   startDeleting();
   try {
+    // 1. Delete all expenses belonging to this car
+    const expensesSnap = await db.collection(EXPENSES_COLLECTION).where('carId', '==', carId).get();
+    if (!expensesSnap.empty) {
+      const batch = db.batch();
+      expensesSnap.docs.forEach((doc: any) => batch.delete(doc.ref));
+      await batch.commit();
+    }
+    // 2. Delete the car document itself
     await db.collection(CARS_COLLECTION).doc(carId).delete();
   } catch (error) {
     console.error("Error deleting car: ", error);

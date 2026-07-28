@@ -158,15 +158,11 @@ export default function LoginScreen() {
           </View>
 
           <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <Image
-              source={require('../assets/icon.png')}
-              style={[styles.brandIcon, { borderColor: isDarkMode ? '#334155' : '#E2E8F0' }]}
-              resizeMode="contain"
-              accessibilityRole="image"
-              accessibilityLabel="Mile Mint logo"
-            />
+            <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? '#1e293b' : colors.accentLight }]}>
+              <Ionicons name="car-sport" size={48} color={colors.primary} />
+            </View>
 
-
+            <Text style={[styles.title, { color: colors.text }]}>Mile Mint</Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('auth.login_subtitle')}</Text>
 
             <View style={styles.form}>
@@ -218,7 +214,7 @@ export default function LoginScreen() {
                   disabled={resetLoading}
                 >
                   <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>
-                    {resetLoading ? t('common.sending') : t('auth.forgot_password')}
+                    {resetLoading ? t('common.please_wait') : t('auth.forgot_password')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -323,22 +319,18 @@ const styles = StyleSheet.create({
     ...SHADOWS.medium,
     marginTop: 80,
   },
-  brandIcon: {
-    width: 104,
-    height: 104,
-    borderRadius: 26,
-    borderWidth: 1,
+  iconContainer: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    justifyContent: 'center',
+    alignItems: 'center',
     alignSelf: 'center',
-    marginBottom: 18,
-    shadowColor: '#38BDF8',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 14,
-    elevation: 6,
+    marginBottom: 20,
   },
   title: {
     ...TYPOGRAPHY.h1,
-    textAlign: 'center'
+    textAlign: 'center',
   },
   subtitle: {
     ...TYPOGRAPHY.body,
@@ -372,7 +364,10 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    ...TYPOGRAPHY.body,
+    fontSize: 14,
+    fontWeight: '400',
+    paddingVertical: 0,
+    textAlignVertical: 'center',
   },
   passwordVisibilityButton: {
     padding: 4,

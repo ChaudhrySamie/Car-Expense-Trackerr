@@ -75,8 +75,8 @@ export default function CustomLoader({
             },
           ]}
         >
-          <View style={styles.spinnerArea}>
-            <View style={[styles.spinnerTrack, { width: size, height: size, borderRadius: size / 2, borderColor: colors.border }]} />
+          <View style={[styles.spinnerArea, { width: size, height: size }]}>
+            <View style={[styles.spinnerTrack, { width: size, height: size, borderRadius: size / 2, borderColor: isDarkMode ? '#334155' : '#E2E8F0' }]} />
             <Animated.View
               style={[
                 styles.loaderRing,
@@ -84,7 +84,10 @@ export default function CustomLoader({
                   width: size,
                   height: size,
                   borderRadius: size / 2,
-                  borderColor: colors.danger,
+                  borderTopColor: colors.danger,
+                  borderRightColor: colors.danger,
+                  borderBottomColor: 'transparent',
+                  borderLeftColor: 'transparent',
                   transform: [{ rotate: spin }],
                 },
               ]}
@@ -125,17 +128,17 @@ const styles = StyleSheet.create({
     elevation: 18,
   },
   spinnerArea: {
+    position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
   },
   spinnerTrack: {
     position: 'absolute',
-    borderWidth: 5,
+    borderWidth: 4,
   },
   loaderRing: {
-    borderWidth: 5,
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
+    position: 'absolute',
+    borderWidth: 4,
   },
   message: {
     marginTop: 8,
