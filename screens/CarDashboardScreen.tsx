@@ -110,7 +110,7 @@ export default function CarDashboardScreen() {
      { id: 'Fuel', label: t('categories.Fuel'), icon: 'speedometer-outline', color: '#F97316', screen: 'Fuel' },
      { id: 'OilChange', label: t('categories.OilChange'), icon: 'water-outline', color: '#10B981', screen: 'OilChange' },
      { id: 'Finance', label: t('categories.Finance'), icon: 'cash-outline', color: '#8B5CF6', screen: 'Finance' },
-     { id: 'Tax', label: t('categories.Tax'), icon: 'document-text-outline', color: '#EF4444', screen: 'ExpenseList' },
+     { id: 'Tax', label: t('dashboard.tax_and_fines', { defaultValue: 'Tax & Fines' }), icon: 'document-text-outline', color: '#EF4444', screen: 'ExpenseList' },
      { id: 'Other', label: t('categories.Other'), icon: 'ellipsis-horizontal-circle-outline', color: '#64748B', screen: 'ExpenseList' },
    ];
 
@@ -166,7 +166,14 @@ export default function CarDashboardScreen() {
             {loading ? (
               <ActivityIndicator color={colors.primary} size="small" style={{ marginVertical: 10 }} />
             ) : (
-              <Text style={[styles.wealthAmount, { color: colors.primary }]}>{currency} {financials.overallTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</Text>
+              <Text
+                style={[styles.wealthAmount, { color: colors.primary }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.58}
+              >
+                {currency} {financials.overallTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </Text>
             )}
 
             <View style={[styles.wealthDivider, { backgroundColor: colors.border }]} />
@@ -203,12 +210,26 @@ export default function CarDashboardScreen() {
             <View style={styles.wealthSplit}>
                <View style={styles.wealthHalf}>
                  <Text style={[styles.splitLabel, { color: colors.textSecondary }]}>{t('dashboard.paid_so_far')}</Text>
-                 <Text style={[styles.splitAmount, { color: colors.success }]}>{currency} {financials.totalPaid.toLocaleString()}</Text>
+                 <Text
+                   style={[styles.splitAmount, { color: colors.success }]}
+                   numberOfLines={1}
+                   adjustsFontSizeToFit
+                   minimumFontScale={0.62}
+                 >
+                   {currency} {financials.totalPaid.toLocaleString()}
+                 </Text>
                </View>
                <View style={[styles.splitDivider, { backgroundColor: colors.border }]} />
                <View style={styles.wealthHalf}>
                  <Text style={[styles.splitLabel, { color: colors.textSecondary }]}>{t('dashboard.remaining_balance')}</Text>
-                 <Text style={[styles.splitAmountUpcoming, { color: colors.warning }]}>{currency} {financials.upcoming.toLocaleString()}</Text>
+                 <Text
+                   style={[styles.splitAmountUpcoming, { color: colors.warning }]}
+                   numberOfLines={1}
+                   adjustsFontSizeToFit
+                   minimumFontScale={0.62}
+                 >
+                   {currency} {financials.upcoming.toLocaleString()}
+                 </Text>
                </View>
             </View>
           </View>
@@ -292,15 +313,15 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.label, textAlign: 'center', marginBottom: 8
   },
   wealthAmount: {
-    ...TYPOGRAPHY.h1, fontSize: 36, textAlign: 'center', marginBottom: 20
+    ...TYPOGRAPHY.h1, fontSize: 34, lineHeight: 40, textAlign: 'center', marginBottom: 20
   },
   wealthDivider: { height: 1.5, marginBottom: 20 },
   wealthSplit: { flexDirection: 'row', alignItems: 'center' },
-  wealthHalf: { flex: 1, alignItems: 'center' },
+  wealthHalf: { flex: 1, minWidth: 0, alignItems: 'center' },
   splitDivider: { width: 1.5, height: 30 },
   splitLabel: { ...TYPOGRAPHY.caption, fontSize: 11, marginBottom: 4 },
-  splitAmount: { ...TYPOGRAPHY.h3 },
-  splitAmountUpcoming: { ...TYPOGRAPHY.h3 },
+  splitAmount: { ...TYPOGRAPHY.h3, fontSize: 17, lineHeight: 22, width: '100%', textAlign: 'center' },
+  splitAmountUpcoming: { ...TYPOGRAPHY.h3, fontSize: 17, lineHeight: 22, width: '100%', textAlign: 'center' },
 
   chartSection: { alignItems: 'center', marginBottom: 20 },
   insightBadge: {

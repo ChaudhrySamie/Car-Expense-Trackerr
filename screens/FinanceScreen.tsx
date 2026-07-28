@@ -20,7 +20,9 @@ import CustomDatePicker from '../components/common/CustomDatePicker';
 import { SHADOWS, TYPOGRAPHY } from '../utils/theme';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { formatDisplayDate, formatDateToISO } from '../utils/dateHelpers';
+import { getFriendlyDataErrorMessage } from '../utils/authErrors';
 const { width } = Dimensions.get('window');
+const MAX_LOAN_TENURE_MONTHS = 600;
 
 type FinanceRouteProp = RouteProp<RootStackParamList, 'Finance'>;
 
@@ -81,6 +83,11 @@ export default function FinanceScreen() {
           setTenureMonths(config.tenure?.toString() || '');
            setStartDate(config.startDate || formatDateToISO(new Date()));
           setAlreadyPaidMonths(config.initialPaidMonths?.toString() || '0');
+          // FIX: previously `scenario` was never restored from the saved config.
+          // This meant re-opening an "existing loan" plan for editing would lose
+          // the scenario flag (the "Already Paid Months" field would vanish, and
+          // saving again would silently overwrite scenario with null).
+          setScenario(config.scenario === 'existing' ? 'existing' : config.scenario === 'new' ? 'new' : null);
         } catch (e) { }
       }
 
@@ -99,17 +106,46 @@ export default function FinanceScreen() {
        return;
      }
 
+    const totalPriceNum = parseFloat(totalPrice);
+    const downPaymentNum = parseFloat(downPayment);
+    const installmentNum = parseFloat(monthlyInstallment);
+    const tenureNum = Number(tenureMonths);
+    const alreadyPaidMonthsNum = Number(alreadyPaidMonths);
+
+    // FIX: guard against NaN / non-positive values that previously slipped through
+    // and could corrupt the stats math (e.g. divide-by-zero, invalid dates).
+    if ([totalPriceNum, downPaymentNum, installmentNum, tenureNum, alreadyPaidMonthsNum].some(n => !Number.isFinite(n))) {
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('finance.details_required') });
+      return;
+    }
+    if (totalPriceNum <= 0 || installmentNum <= 0 || !Number.isInteger(tenureNum) || tenureNum > MAX_LOAN_TENURE_MONTHS) {
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: `Loan period must be between 1 and ${MAX_LOAN_TENURE_MONTHS} months.` });
+      return;
+    }
+    if (!Number.isInteger(alreadyPaidMonthsNum) || alreadyPaidMonthsNum < 0 || alreadyPaidMonthsNum > tenureNum) {
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: 'Already paid months cannot be greater than the loan period.' });
+      return;
+    }
+    if (downPaymentNum >= totalPriceNum) {
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('finance.details_required') });
+      return;
+    }
+    if (isNaN(new Date(startDate).getTime())) {
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('finance.details_required') });
+      return;
+    }
+
     setSaving(true);
     try {
-      const principal = parseFloat(totalPrice) - parseFloat(downPayment);
+      const principal = totalPriceNum - downPaymentNum;
       const setupPkg = {
-        totalPrice: parseFloat(totalPrice),
-        downPayment: parseFloat(downPayment),
+        totalPrice: totalPriceNum,
+        downPayment: downPaymentNum,
         principal,
-        installment: parseFloat(monthlyInstallment),
-        tenure: parseInt(tenureMonths),
+        installment: installmentNum,
+        tenure: tenureNum,
         startDate,
-        initialPaidMonths: parseInt(alreadyPaidMonths) || 0,
+        initialPaidMonths: alreadyPaidMonthsNum,
         scenario
       };
 
@@ -131,7 +167,7 @@ export default function FinanceScreen() {
        setSetupModalVisible(false);
        setStatusModal({ visible: true, type: 'success', title: t('finance.plan_active'), message: t('finance.plan_success_msg') });
     } catch (error: any) {
-      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: error.message });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: getFriendlyDataErrorMessage(error, setupDetails?.id ? 'update' : 'save') });
     } finally {
       setSaving(false);
     }
@@ -144,6 +180,12 @@ export default function FinanceScreen() {
        setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('finance.enter_amount_date') });
        return;
      }
+    const amountNum = parseFloat(payAmount);
+    // FIX: guard against NaN / non-positive payment amounts.
+    if (isNaN(amountNum) || amountNum <= 0) {
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('finance.enter_amount_date') });
+      return;
+    }
     setSaving(true);
     try {
       const p: Expense = {
@@ -151,7 +193,7 @@ export default function FinanceScreen() {
         category: 'Finance',
         date: payDate,
         workName: payType,
-        amount: parseFloat(payAmount)
+        amount: amountNum
       };
 
       if (editingPayment?.id) {
@@ -170,7 +212,7 @@ export default function FinanceScreen() {
          message: t('finance.transaction_processed')
        });
     } catch (err: any) {
-      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: err.message });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: getFriendlyDataErrorMessage(err, editingPayment?.id ? 'update' : 'save') });
     } finally {
       setSaving(false);
     }
@@ -192,7 +234,7 @@ export default function FinanceScreen() {
        await deleteExpenseFromDb(id);
        setStatusModal({ visible: true, type: 'success', title: t('common.success'), message: t('finance.transaction_removed') });
     } catch (e: any) {
-      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: e.message });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: getFriendlyDataErrorMessage(e, 'delete') });
     } finally {
       setSaving(false);
     }
@@ -215,7 +257,7 @@ export default function FinanceScreen() {
        setSetupStep(1);
        setStatusModal({ visible: true, type: 'success', title: t('finance.plan_terminated'), message: t('finance.plan_cleared') });
     } catch (e: any) {
-      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: e.message });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: getFriendlyDataErrorMessage(e, 'delete') });
     } finally {
       setSaving(false);
     }
@@ -249,23 +291,27 @@ export default function FinanceScreen() {
       const manualMonths = Math.floor(manualPaid / installmentAmt);
       stats.paidMonths = (cfg.initialPaidMonths || 0) + manualMonths;
       stats.totalMonths = cfg.tenure || 0;
-      stats.progress = Math.min(100, (stats.paidAmount / (stats.totalLoan || 1)) * 100);
+      // FIX: guard divide-by-zero when totalLoan is 0 (e.g. down payment == total price)
+      stats.progress = stats.totalLoan > 0 ? Math.min(100, (stats.paidAmount / stats.totalLoan) * 100) : 100;
 
       // Dates
       const startD = new Date(cfg.startDate);
-      const endD = new Date(startD);
-      endD.setMonth(endD.getMonth() + stats.totalMonths);
-      stats.expectedEndDate = endD.toISOString().split('T')[0];
+      if (!isNaN(startD.getTime())) {
+        const endD = new Date(startD);
+        endD.setMonth(endD.getMonth() + stats.totalMonths);
+        stats.expectedEndDate = endD.toISOString().split('T')[0];
 
-      const nextD = new Date(startD);
-      nextD.setMonth(nextD.getMonth() + stats.paidMonths);
-      stats.nextPaymentDate = nextD.toISOString().split('T')[0];
+        const nextD = new Date(startD);
+        nextD.setMonth(nextD.getMonth() + stats.paidMonths);
+        stats.nextPaymentDate = nextD.toISOString().split('T')[0];
 
-      const now = new Date();
-       stats.isOverdue = now > nextD && stats.remainingAmount > 0;
-       if (stats.remainingAmount <= 0) stats.status = t('finance.status_completed');
-       else if (stats.isOverdue) stats.status = t('finance.status_due');
-       else stats.status = t('finance.status_active');
+        const now = new Date();
+        stats.isOverdue = now > nextD && stats.remainingAmount > 0;
+      }
+
+      if (stats.remainingAmount <= 0) stats.status = t('finance.status_completed');
+      else if (stats.isOverdue) stats.status = t('finance.status_due');
+      else stats.status = t('finance.status_active');
 
     } catch (e) { }
   }
@@ -519,19 +565,38 @@ export default function FinanceScreen() {
                    <View style={styles.stepDetails}>
                      <View style={styles.formGroup}>
                        <Text style={[styles.inputLabel, { color: colors.text }]}>{t('finance.total_price')}</Text>
-                       <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" value={totalPrice} onChangeText={setTotalPrice} placeholder="Market Price" placeholderTextColor={colors.textSecondary} />
+                       <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={9} value={totalPrice} onChangeText={setTotalPrice} placeholder="Market Price" placeholderTextColor={colors.textSecondary} />
                      </View>
                      <View style={styles.row}>
                        <View style={[styles.formGroup, { flex: 1, marginRight: 12 }]}>
                          <Text style={[styles.inputLabel, { color: colors.text }]}>{t('finance.down_payment')}</Text>
-                         <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" value={downPayment} onChangeText={setDownPayment} placeholder="Amount Paid" placeholderTextColor={colors.textSecondary} />
+                         <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={9} value={downPayment} onChangeText={setDownPayment} placeholder="Amount Paid" placeholderTextColor={colors.textSecondary} />
                        </View>
                        <View style={[styles.formGroup, { flex: 1 }]}>
                          <Text style={[styles.inputLabel, { color: colors.text }]}>{t('finance.monthly_emi')}</Text>
-                         <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" value={monthlyInstallment} onChangeText={setMonthlyInstallment} placeholder="Monthly Dues" placeholderTextColor={colors.textSecondary} />
+                         <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={9} value={monthlyInstallment} onChangeText={setMonthlyInstallment} placeholder="Monthly Dues" placeholderTextColor={colors.textSecondary} />
                        </View>
                      </View>
-                     <AnimatedButton title="Continue to Timeline" onPress={() => setSetupStep(3)} />
+                     <AnimatedButton
+                       title="Continue to Timeline"
+                       onPress={() => {
+                         // FIX: previously this jumped to Step 3 with zero validation,
+                         // letting users reach "Finalize" with an invalid down payment
+                         // (e.g. down payment >= total price) before ever seeing an error.
+                         const tp = parseFloat(totalPrice);
+                         const dp = parseFloat(downPayment);
+                         const inst = parseFloat(monthlyInstallment);
+                         if (!totalPrice || !downPayment || !monthlyInstallment || isNaN(tp) || isNaN(dp) || isNaN(inst)) {
+                           setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('finance.details_required') });
+                           return;
+                         }
+                         if (dp >= tp) {
+                           setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('finance.details_required') });
+                           return;
+                         }
+                         setSetupStep(3);
+                       }}
+                     />
                     <TouchableOpacity onPress={() => setSetupStep(1)} style={[styles.secondaryBtn, { borderColor: colors.primary }]}>
                       <Ionicons name="arrow-back" size={16} color={colors.primary} style={{ marginRight: 6 }} />
                       <Text style={[styles.secondaryBtnText, { color: colors.primary }]}>Change Scenario</Text>
@@ -544,7 +609,7 @@ export default function FinanceScreen() {
                      <View style={styles.row}>
                        <View style={[styles.formGroup, { flex: 1, marginRight: 12 }]}>
                          <Text style={[styles.inputLabel, { color: colors.text }]}>{t('finance.loan_period')}</Text>
-                         <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" value={tenureMonths} onChangeText={setTenureMonths} placeholder="No of Months" placeholderTextColor={colors.textSecondary} />
+                         <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={3} value={tenureMonths} onChangeText={setTenureMonths} placeholder="Up to 600 months" placeholderTextColor={colors.textSecondary} />
                        </View>
                         <View style={[styles.formGroup, { flex: 1 }]}>
                           <CustomDatePicker 
@@ -556,14 +621,17 @@ export default function FinanceScreen() {
                      </View>
 
                      {scenario === 'existing' && (
-                       <View style={styles.historyHighlight}>
+                       <View style={[styles.historyHighlight, { backgroundColor: isDarkMode ? '#172554' : '#EFF6FF', borderColor: isDarkMode ? '#1D4ED8' : '#BFDBFE' }]}>
                          <Text style={[styles.inputLabel, { color: colors.text }]}>{t('finance.already_paid_months')}</Text>
                          <TextInput
-                           style={styles.inputLarge}
+                           style={[styles.inputLarge, { backgroundColor: colors.surface, borderColor: colors.primary, color: colors.text }]}
                            keyboardType="numeric"
+                           maxLength={3}
                            value={alreadyPaidMonths}
                            onChangeText={setAlreadyPaidMonths}
                            placeholder="0"
+                           placeholderTextColor={colors.textSecondary}
+                           selectionColor={colors.primary}
                          />
                        </View>
                      )}
@@ -583,7 +651,7 @@ export default function FinanceScreen() {
                   </View>
                 )}
               </ScrollView>
-              <View style={{ height: 600, backgroundColor: '#FFF', position: 'absolute', bottom: -600, left: 0, right: 0 }} />
+              <View style={{ height: 600, backgroundColor: colors.surface, position: 'absolute', bottom: -600, left: 0, right: 0 }} />
             </View>
           </KeyboardAvoidingView>
         </View>
@@ -637,7 +705,7 @@ export default function FinanceScreen() {
                  </View>
                  <View style={styles.formGroup}>
                    <Text style={[styles.inputLabel, { color: colors.text }]}>{t('finance.amount_paid')}</Text>
-                   <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" value={payAmount} onChangeText={setPayAmount} placeholderTextColor={colors.textSecondary} />
+                   <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={9} value={payAmount} onChangeText={setPayAmount} placeholderTextColor={colors.textSecondary} />
                  </View>
 
                  <AnimatedButton
@@ -647,7 +715,7 @@ export default function FinanceScreen() {
                    style={{ marginTop: 10 }}
                  />
               </ScrollView>
-              <View style={{ height: 600, backgroundColor: '#FFF', position: 'absolute', bottom: -600, left: 0, right: 0 }} />
+              <View style={{ height: 600, backgroundColor: colors.surface, position: 'absolute', bottom: -600, left: 0, right: 0 }} />
             </View>
           </KeyboardAvoidingView>
         </View>

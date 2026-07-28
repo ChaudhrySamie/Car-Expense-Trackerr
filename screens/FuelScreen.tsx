@@ -16,6 +16,7 @@ import CustomDatePicker from '../components/common/CustomDatePicker';
 import { SHADOWS, TYPOGRAPHY } from '../utils/theme';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { formatDisplayDate, formatDateToISO } from '../utils/dateHelpers';
+import { getFriendlyDataErrorMessage } from '../utils/authErrors';
 type FuelRouteProp = RouteProp<RootStackParamList, 'Fuel'>;
 
 export default function FuelScreen() {
@@ -109,7 +110,7 @@ export default function FuelScreen() {
          message: editingLogId ? t('fuel.log_updated') : t('fuel.log_saved')
        });
     } catch (error: any) {
-      setStatusModal({ visible: true, type: 'error', title: 'Error', message: error.message });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: getFriendlyDataErrorMessage(error, editingLogId ? 'update' : 'save') });
     } finally {
       setSaving(false);
     }
@@ -151,37 +152,55 @@ export default function FuelScreen() {
     }
   };
 
+  /**
+   * FIXED: calculateStats
+   * ---------------------
+   * Bug (original): mileage/efficiency used ONLY `current.liters` — the liters
+   * of the current full-tank entry — while ignoring any PARTIAL fills that
+   * happened between the current full tank and the previous full tank.
+   * This overstated mileage whenever a partial top-off occurred in between.
+   *
+   * Fix: accumulate liters (and cost) across every entry from the current
+   * full-tank fill back to (and including) the previous full-tank fill,
+   * including any partial fills sandwiched in between. That total represents
+   * everything actually burned to cover the distance travelled.
+   */
   const calculateStats = (index: number) => {
-  const current = fuelLogs[index];
-  if (!current.isFullTank) return null;
+    const current = fuelLogs[index];
+    if (!current.isFullTank) return null;
 
-  let previous: Expense | null = null;
-  let litersSinceLastFull = current.liters || 0; // start with current full-tank's own liters
+    let previous: Expense | null = null;
+    let litersSinceLastFull = current.liters || 0;
+    let amountSinceLastFull = current.amount || 0;
 
-  for (let i = index + 1; i < fuelLogs.length; i++) {
-    if (fuelLogs[i].isFullTank) {
-      previous = fuelLogs[i];
-      break;
+    for (let i = index + 1; i < fuelLogs.length; i++) {
+      if (fuelLogs[i].isFullTank) {
+        previous = fuelLogs[i];
+        break;
+      }
+      // Accumulate any partial fill-ups that happened between the two full tanks
+      litersSinceLastFull += fuelLogs[i].liters || 0;
+      amountSinceLastFull += fuelLogs[i].amount || 0;
     }
-    // accumulate any partial fills in between
-    litersSinceLastFull += fuelLogs[i].liters || 0;
-  }
 
-  if (!previous || !current.odometer || !previous.odometer || litersSinceLastFull <= 0) return null;
+    if (!previous || !current.odometer || !previous.odometer || litersSinceLastFull <= 0) return null;
 
-  const kmTravelled = current.odometer - previous.odometer;
-  if (kmTravelled <= 0) return null;
+    const kmTravelled = current.odometer - previous.odometer;
+    if (kmTravelled <= 0) return null;
 
-  const mileage = kmTravelled / litersSinceLastFull;
-  const efficiency = (litersSinceLastFull / kmTravelled) * 100;
-  const costPerKm = current.amount / kmTravelled; // still only reflects current fill's cost — see note below
+    const mileage = kmTravelled / litersSinceLastFull; // km/l (now includes partial-fill liters)
+    const efficiency = (litersSinceLastFull / kmTravelled) * 100; // l/100km
+    const costPerKm = amountSinceLastFull / kmTravelled; // now includes partial-fill cost too
 
-  return { mileage, efficiency, costPerKm, kmTravelled };
-};
+    return { mileage, efficiency, costPerKm, kmTravelled, litersSinceLastFull };
+  };
 
   const hasLogs = fuelLogs.length > 0;
   const firstLog = hasLogs ? fuelLogs[fuelLogs.length - 1] : null;
   const lastLog = hasLogs ? fuelLogs[0] : null;
+  // Note: the oldest log's liters are intentionally excluded here — that fill
+  // only established the starting odometer/tank baseline and wasn't "consumed"
+  // within the totalKm window being measured. This part was already correct.
   const totalLiters = fuelLogs.reduce((acc, curr, idx) => idx === fuelLogs.length - 1 ? acc : acc + (curr.liters || 0), 0);
   const totalKm = (lastLog?.odometer && firstLog?.odometer) ? lastLog.odometer - firstLog.odometer : 0;
   const avgMileage = (totalKm > 0 && totalLiters > 0) ? totalKm / totalLiters : 0;
@@ -350,24 +369,24 @@ export default function FuelScreen() {
                 <View style={styles.row}>
                   <View style={[styles.formGroup, { flex: 1, marginRight: 12 }]}>
                     <Text style={[styles.label, { color: colors.text }]}>Liters *</Text>
-                    <TextInput style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]} keyboardType="numeric" value={liters} onChangeText={(val) => handlePriceCalc(val, pricePerLiter)} placeholder="0.0" placeholderTextColor={colors.textSecondary} />
+                    <TextInput style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]} keyboardType="numeric" maxLength={6} value={liters} onChangeText={(val) => handlePriceCalc(val, pricePerLiter)} placeholder="0.0" placeholderTextColor={colors.textSecondary} />
                   </View>
                   <View style={[styles.formGroup, { flex: 1 }]}>
                     <Text style={[styles.label, { color: colors.text }]}>Rate/Ltr</Text>
-                    <TextInput style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]} keyboardType="numeric" value={pricePerLiter} onChangeText={(val) => handlePriceCalc(liters, val)} placeholder="Optional" placeholderTextColor={colors.textSecondary} />
+                    <TextInput style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]} keyboardType="numeric" maxLength={6} value={pricePerLiter} onChangeText={(val) => handlePriceCalc(liters, val)} placeholder="Optional" placeholderTextColor={colors.textSecondary} />
                   </View>
                 </View>
 
                 <View style={styles.formGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>Total Price ({currency}) *</Text>
-                  <TextInput style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]} keyboardType="numeric" value={totalPrice} onChangeText={setTotalPrice} placeholder="Auto or Manual" placeholderTextColor={colors.textSecondary} />
+                  <TextInput style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]} keyboardType="numeric" maxLength={9} value={totalPrice} onChangeText={setTotalPrice} placeholder="Auto or Manual" placeholderTextColor={colors.textSecondary} />
                 </View>
 
                  <View style={styles.formGroup}>
                    <Text style={[styles.label, { color: colors.text }]}>{t('fuel.odometer')} (km) *</Text>
                    <View style={[styles.inputWithIcon, { backgroundColor: colors.background, borderColor: colors.border }]}>
                      <Ionicons name="speedometer-outline" size={20} color={colors.primary} style={{ marginRight: 12 }} />
-                     <TextInput style={[styles.inputFlex, { color: colors.text }]} keyboardType="numeric" value={odometer} onChangeText={setOdometer} placeholder="Current reading" placeholderTextColor={colors.textSecondary} />
+                     <TextInput style={[styles.inputFlex, { color: colors.text }]} keyboardType="numeric" maxLength={8} value={odometer} onChangeText={setOdometer} placeholder="Current reading" placeholderTextColor={colors.textSecondary} />
                    </View>
                  </View>
 

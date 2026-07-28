@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import './i18n';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -29,6 +30,9 @@ import AdminUsersScreen from './screens/admin/AdminUsersScreen';
 import AdminNotificationScreen from './screens/admin/AdminNotificationScreen';
 
 import CustomLoader from './components/common/CustomLoader';
+import AppSplashScreen from './components/common/AppSplashScreen';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Navigation Types
 export type RootStackParamList = {
@@ -52,6 +56,8 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
  export default function App() {
   const { user, setUser, setLanguage, setCurrency, isDarkMode, toggleDarkMode, isDeleting, deletingMessage } = useStore();
   const { i18n } = useTranslation();
+  const [settingsReady, setSettingsReady] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const loadSavedSettings = async () => {
@@ -80,6 +86,8 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
+      } finally {
+        setSettingsReady(true);
       }
     };
     loadSavedSettings();
@@ -123,6 +131,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
         if (unsubscribeUserDoc) unsubscribeUserDoc();
         setUser(null);
       }
+      setAuthReady(true);
     });
     
     return () => {
@@ -130,6 +139,19 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
       unsubscribeAuth();
     };
   }, []);
+
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
+
+  if (!settingsReady || !authReady) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <StatusBar style="light" />
+        <AppSplashScreen />
+      </GestureHandlerRootView>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

@@ -261,6 +261,7 @@ export default function HomeScreen() {
         transparent
         animationType="fade"
         statusBarTranslucent
+        navigationBarTranslucent
         onRequestClose={() => setShowProfileMenu(false)}
       >
         <View style={styles.profileModalOverlay}>

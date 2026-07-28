@@ -52,7 +52,7 @@ export default function CustomStatusModal({ visible, type, title, message, onClo
   const icon = getIcon();
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent>
       <View style={styles.overlay}>
         <Animated.View style={[styles.content, { backgroundColor: colors.surface, borderColor: colors.border, transform: [{ scale }, { translateX: shake }] }]}>
           <Ionicons name={icon.name} size={80} color={icon.color} style={styles.icon} />

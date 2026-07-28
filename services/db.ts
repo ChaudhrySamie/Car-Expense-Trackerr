@@ -101,7 +101,6 @@ export interface Expense {
   currentMileage?: string;
   brand?: string;
   viscosity?: string;
-  workshop?: string;
   filterBrand?: string;
   // Fuel specific
   liters?: number;
@@ -113,9 +112,54 @@ export interface Expense {
 }
 
 const EXPENSES_COLLECTION = 'expenses';
+export const MAX_EXPENSE_AMOUNT = 100_000_000;
+export const MAX_FUEL_LITERS = 1_000;
+export const MAX_FUEL_RATE_PER_LITER = 100_000;
+export const MAX_ODOMETER_KM = 10_000_000;
+export const MAX_OIL_BRAND_LENGTH = 50;
+export const MAX_OIL_VISCOSITY_LENGTH = 20;
+
+const validateExpenseAmount = (expenseData: any) => {
+  const amount = Number(expenseData?.amount);
+  if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_EXPENSE_AMOUNT) {
+    const error: any = new Error('Expense amount is outside the allowed range.');
+    error.code = 'validation/amount-out-of-range';
+    throw error;
+  }
+};
+
+const validateOptionalNumber = (value: unknown, maximum: number, errorCode: string) => {
+  if (value === undefined || value === null || value === '') return;
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue) || numberValue < 0 || numberValue > maximum) {
+    const error: any = new Error('A numeric value is outside the allowed range.');
+    error.code = errorCode;
+    throw error;
+  }
+};
+
+const validateOptionalText = (value: unknown, maximumLength: number, errorCode: string) => {
+  if (value === undefined || value === null) return;
+  if (String(value).length > maximumLength) {
+    const error: any = new Error('Text is longer than allowed.');
+    error.code = errorCode;
+    throw error;
+  }
+};
+
+const validateExpenseDetails = (expenseData: any) => {
+  validateExpenseAmount(expenseData);
+  validateOptionalNumber(expenseData?.liters, MAX_FUEL_LITERS, 'validation/liters-out-of-range');
+  validateOptionalNumber(expenseData?.pricePerLiter, MAX_FUEL_RATE_PER_LITER, 'validation/rate-out-of-range');
+  validateOptionalNumber(expenseData?.odometer, MAX_ODOMETER_KM, 'validation/odometer-out-of-range');
+  validateOptionalNumber(expenseData?.currentMileage, MAX_ODOMETER_KM, 'validation/odometer-out-of-range');
+  validateOptionalText(expenseData?.brand, MAX_OIL_BRAND_LENGTH, 'validation/brand-too-long');
+  validateOptionalText(expenseData?.viscosity, MAX_OIL_VISCOSITY_LENGTH, 'validation/viscosity-too-long');
+};
 
 export const addExpenseToDb = async (expenseData: any) => {
   try {
+    validateExpenseDetails(expenseData);
     const docRef = await db.collection(EXPENSES_COLLECTION).add({
       ...expenseData,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -189,6 +233,7 @@ export const subscribeToExpensesByCategory = (carId: string, category: string, c
 
 export const updateExpenseInDb = async (expenseId: string, expenseData: any) => {
   try {
+    validateExpenseDetails(expenseData);
     await db.collection(EXPENSES_COLLECTION).doc(expenseId).update({
       ...expenseData,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()

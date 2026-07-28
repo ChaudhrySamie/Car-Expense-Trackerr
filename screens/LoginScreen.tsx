@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, Modal, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, Modal, Linking, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { auth, db } from '../services/firebase';
 import { useStore } from '../context/useStore';
@@ -9,6 +9,7 @@ import CustomStatusModal from '../components/common/CustomStatusModal';
 import { SHADOWS, TYPOGRAPHY } from '../utils/theme';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { getFriendlyErrorMessage } from '../utils/authErrors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -20,6 +21,7 @@ export default function LoginScreen() {
   const navigation = useNavigation<any>();
   const setUser = useStore(state => state.setUser);
   const { colors, isDarkMode } = useThemeColors();
+  const insets = useSafeAreaInsets();
 
   const [statusModal, setStatusModal] = useState<{
     visible: boolean;
@@ -122,7 +124,7 @@ export default function LoginScreen() {
         visible: true,
         type: 'success',
         title: t('auth.reset_sent'),
-        message: t('auth.reset_sent_msg', { email })
+        message: `${t('auth.reset_sent_msg', { email })}\n\n${t('auth.reset_spam_reminder', { defaultValue: "If you don't receive it shortly, check your spam or junk folder." })}`
       });
     } catch (error: any) {
       console.error(error);
@@ -141,20 +143,30 @@ export default function LoginScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView automaticallyAdjustKeyboardInsets={true} contentContainerStyle={{ flexGrow: 1, paddingBottom: 60 }}>
+        <ScrollView
+          style={styles.scrollView}
+          automaticallyAdjustKeyboardInsets={true}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 24) + 40 }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.backgroundShapes}>
             <View style={[styles.circleTopRight, { backgroundColor: isDarkMode ? '#1e293b' : '#E0F2FE' }]} />
             <View style={[styles.circleBottomLeft, { backgroundColor: isDarkMode ? '#1e293b' : '#E0F2FE' }]} />
           </View>
 
           <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? '#1e293b' : colors.accentLight }]}>
-              <Ionicons name="car-sport" size={56} color={colors.primary} />
-            </View>
+            <Image
+              source={require('../assets/icon.png')}
+              style={[styles.brandIcon, { borderColor: isDarkMode ? '#334155' : '#E2E8F0' }]}
+              resizeMode="contain"
+              accessibilityRole="image"
+              accessibilityLabel="Mile Mint logo"
+            />
 
-            <Text style={[styles.title, { color: colors.text }]}>Mile Mint</Text>
+
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('auth.login_subtitle')}</Text>
 
             <View style={styles.form}>
@@ -234,7 +246,6 @@ export default function LoginScreen() {
 
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>{t('auth.developed_by')}</Text>
           </View>
-          <View style={{ height: 100 }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -244,7 +255,7 @@ export default function LoginScreen() {
       />
 
       {/* Deactivated Account Modal */}
-      <Modal visible={deactivatedVisible} transparent animationType="fade">
+      <Modal visible={deactivatedVisible} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent>
         <View style={styles.deactivatedOverlay}>
           <View style={[styles.deactivatedCard, { backgroundColor: colors.surface }]}>
             <View style={styles.deactivatedIconCircle}>
@@ -277,8 +288,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
     padding: 24,
+    flexGrow: 1,
   },
   backgroundShapes: {
     ...StyleSheet.absoluteFillObject,
@@ -307,14 +323,18 @@ const styles = StyleSheet.create({
     ...SHADOWS.medium,
     marginTop: 80,
   },
-  iconContainer: {
-    width: 90,
-    height: 90,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+  brandIcon: {
+    width: 104,
+    height: 104,
+    borderRadius: 26,
+    borderWidth: 1,
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 18,
+    shadowColor: '#38BDF8',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    elevation: 6,
   },
   title: {
     ...TYPOGRAPHY.h1,

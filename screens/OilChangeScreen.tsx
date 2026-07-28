@@ -18,6 +18,7 @@ import CustomDatePicker from '../components/common/CustomDatePicker';
 import { SHADOWS, TYPOGRAPHY } from '../utils/theme';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { formatDisplayDate, formatDateToISO } from '../utils/dateHelpers';
+import { getFriendlyDataErrorMessage } from '../utils/authErrors';
 type OilChangeRouteProp = RouteProp<RootStackParamList, 'OilChange'>;
 
 export default function OilChangeScreen() {
@@ -51,7 +52,6 @@ export default function OilChangeScreen() {
   const [brand, setBrand] = useState('');
   const [viscosity, setViscosity] = useState('');
   const [odometer, setOdometer] = useState('');
-  const [workshop, setWorkshop] = useState('');
   const [filterBrand, setFilterBrand] = useState('');
 
   const resetForm = () => {
@@ -62,7 +62,6 @@ export default function OilChangeScreen() {
     setBrand('');
     setViscosity('');
     setOdometer('');
-    setWorkshop('');
     setFilterBrand('');
     setDate(formatDateToISO(new Date()));
   };
@@ -111,7 +110,6 @@ export default function OilChangeScreen() {
         brand,
         viscosity,
         odometer,
-        workshop,
         filterBrand
       };
 
@@ -126,7 +124,7 @@ export default function OilChangeScreen() {
       setModalVisible(false);
       resetForm();
     } catch (error: any) {
-      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: error.message });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: getFriendlyDataErrorMessage(error, isEditing ? 'update' : 'save') });
     } finally {
       setSaving(false);
     }
@@ -144,7 +142,6 @@ export default function OilChangeScreen() {
     setBrand(item.brand || '');
     setViscosity(item.viscosity || '');
     setOdometer(item.odometer?.toString() || '');
-    setWorkshop(item.workshop || '');
     setFilterBrand(item.filterBrand || '');
     setModalVisible(true);
   };
@@ -156,7 +153,7 @@ export default function OilChangeScreen() {
         setConfirmModal({ visible: false, id: '' });
       }
     } catch (error: any) {
-      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: error.message });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: getFriendlyDataErrorMessage(error, 'delete') });
     }
   };
 
@@ -351,28 +348,23 @@ export default function OilChangeScreen() {
 
                 <View style={styles.formGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>{t('oil.brand')} *</Text>
-                  <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} value={brand} onChangeText={setBrand} placeholder="e.g. Shell, Liqui Moly" placeholderTextColor={colors.textSecondary} />
+                  <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} maxLength={50} value={brand} onChangeText={setBrand} placeholder="e.g. Shell, Liqui Moly" placeholderTextColor={colors.textSecondary} />
                 </View>
 
                 <View style={styles.row}>
                   <View style={[styles.formGroup, { flex: 1, marginRight: 12 }]}>
                     <Text style={[styles.label, { color: colors.text }]}>{t('oil.viscosity')}</Text>
-                    <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} value={viscosity} onChangeText={setViscosity} placeholder="5W-30" placeholderTextColor={colors.textSecondary} />
+                    <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} maxLength={20} value={viscosity} onChangeText={setViscosity} placeholder="5W-30" placeholderTextColor={colors.textSecondary} />
                   </View>
                   <View style={[styles.formGroup, { flex: 1 }]}>
                     <Text style={[styles.label, { color: colors.text }]}>{t('oil.current_mileage')} *</Text>
-                    <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" value={currentMileage} onChangeText={setCurrentMileage} placeholder="0" placeholderTextColor={colors.textSecondary} />
+                    <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={8} value={currentMileage} onChangeText={setCurrentMileage} placeholder="0" placeholderTextColor={colors.textSecondary} />
                   </View>
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>{t('oil.workshop')}</Text>
-                  <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} value={workshop} onChangeText={setWorkshop} placeholder="Toyota Central" placeholderTextColor={colors.textSecondary} />
                 </View>
 
                 <View style={styles.formGroup}>
                   <Text style={[styles.label, { color: colors.text }]}>{t('oil.total_price')}</Text>
-                  <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" value={amount} onChangeText={setAmount} placeholder="0" placeholderTextColor={colors.textSecondary} />
+                  <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={9} value={amount} onChangeText={setAmount} placeholder="0" placeholderTextColor={colors.textSecondary} />
                 </View>
 
                 <AnimatedButton title={isEditing ? t('oil.update_log') : t('oil.save_log')} onPress={handleSaveExpense} loading={saving} style={{ marginTop: 12 }} />

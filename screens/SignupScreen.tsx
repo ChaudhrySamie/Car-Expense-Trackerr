@@ -10,6 +10,10 @@ import { SHADOWS, TYPOGRAPHY } from '../utils/theme';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { getFriendlyErrorMessage } from '../utils/authErrors';
 
+const MAX_NAME_LENGTH = 50;
+const MAX_EMAIL_LENGTH = 254;
+const MAX_PASSWORD_LENGTH = 128;
+
 export default function SignupScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
@@ -143,6 +147,7 @@ export default function SignupScreen() {
                     placeholderTextColor={colors.textSecondary}
                     value={name}
                     onChangeText={setName}
+                    maxLength={MAX_NAME_LENGTH}
                   />
                 </View>
               </View>
@@ -159,6 +164,7 @@ export default function SignupScreen() {
                     autoCapitalize="none"
                     value={email}
                     onChangeText={setEmail}
+                    maxLength={MAX_EMAIL_LENGTH}
                   />
                 </View>
               </View>
@@ -174,6 +180,7 @@ export default function SignupScreen() {
                     secureTextEntry={!showPassword}
                     value={password}
                     onChangeText={setPassword}
+                    maxLength={MAX_PASSWORD_LENGTH}
                   />
                   <TouchableOpacity
                     onPress={() => setShowPassword((visible) => !visible)}
@@ -201,6 +208,7 @@ export default function SignupScreen() {
                     secureTextEntry={!showConfirmPassword}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
+                    maxLength={MAX_PASSWORD_LENGTH}
                   />
                   <TouchableOpacity
                     onPress={() => setShowConfirmPassword((visible) => !visible)}

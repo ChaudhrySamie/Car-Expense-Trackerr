@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Animated, TouchableWithoutFeedback, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SHADOWS, TYPOGRAPHY } from '../../utils/theme';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
@@ -24,6 +25,7 @@ export default function SelectionModal({ visible, title, subtitle, options, onCl
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const { colors, isDarkMode } = useThemeColors();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (visible) {
@@ -57,13 +59,20 @@ export default function SelectionModal({ visible, title, subtitle, options, onCl
   }, [visible]);
 
   return (
-    <Modal visible={visible} transparent animationType="none">
+    <Modal visible={visible} transparent animationType="none" statusBarTranslucent navigationBarTranslucent>
       <View style={styles.overlay}>
         <TouchableWithoutFeedback onPress={onClose}>
           <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]} />
         </TouchableWithoutFeedback>
         
-        <Animated.View style={[styles.content, { backgroundColor: colors.surface, transform: [{ translateY: slideAnim }] }]}>
+        <Animated.View style={[
+          styles.content,
+          {
+            backgroundColor: colors.surface,
+            paddingBottom: Math.max(insets.bottom, 24) + 16,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}>
           <View style={[styles.indicator, { backgroundColor: colors.border }]} />
           
           <Text style={[styles.title, { color: colors.text }]}>{title}</Text>

@@ -18,6 +18,7 @@
     "currency": "Currency",
     "success": "Success",
     "error": "Error",
+    "fill_fields": "Please complete all required fields.",
     "dark_mode": "Dark Mode"
   },
   "categories": {
@@ -27,7 +28,7 @@
     "Fuel": "Fuel",
     "OilChange": "Oil Change",
     "Finance": "Finance",
-    "Tax": "Tax & Doc",
+    "Tax": "Tax & Fines",
     "Other": "Other"
   },
   "dashboard": {
@@ -37,6 +38,7 @@
     "remaining_balance": "Remaining Balance",
     "expense_distribution": "Expense Distribution",
     "management_hub": "Management Hub",
+    "tax_and_fines": "Tax & Fines",
     "insight": "{{category}} is {{percentage}}% of your total cost"
   },
   "fuel": {
@@ -144,7 +146,7 @@
   "expense_list": {
     "mechanical_title": "Mechanical Work",
     "electrical_title": "Electrical Work",
-    "tax_title": "Tax & Document",
+    "tax_title": "Tax & Fines",
     "other_title": "Other Expenses",
     "total_label": "Total {{category}}",
     "recent_history": "Recent History",
@@ -154,7 +156,11 @@
     "add_expense": "Add Expense",
     "purpose": "Purpose",
     "description": "Description",
+    "purpose_placeholder": "e.g. Annual vehicle tax",
+    "description_placeholder": "e.g. Brake pad replacement",
     "amount_label": "Amount (PKR)",
+    "expense_logged": "Expense added successfully.",
+    "expense_updated": "Expense updated successfully.",
     "save_expense": "Save Expense",
     "delete_title": "Delete Expense",
     "delete_msg": "Are you sure you want to delete this expense log? This action cannot be undone."
@@ -237,6 +243,7 @@
     "email_req_msg": "Please enter your email address first to reset your password.",
     "reset_sent": "Reset Email Sent",
     "reset_sent_msg": "An email has been sent to {{email}} with instructions to reset your password.",
+    "reset_spam_reminder": "If you don't receive it shortly, check your spam or junk folder.",
     "deactivated_title": "Account Deactivated",
     "deactivated_msg": "Your account has been deactivated by the administration. All your data is safe. Please contact admin to reactivate your account.",
     "contact_admin": "Contact Admin",
@@ -253,6 +260,6 @@
     "name_placeholder": "e.g. Chaudhry Samie",
     "pass_placeholder_new": "Create a password",
     "pass_placeholder_confirm": "Re-enter your password",
-    "developed_by": "Developed with ❤️ by Chaudhry Samie"
+    "developed_by": "⚡ Developed by Chaudhry Samie"
   }
 }

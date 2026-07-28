@@ -49,7 +49,7 @@ export default function CustomConfirmModal({
   const icon = getIcon();
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent>
       <View style={styles.overlay}>
         <Animated.View style={[styles.content, { transform: [{ scale }] }]}>
           <View style={[styles.iconContainer, { backgroundColor: icon.color + '15' }]}>

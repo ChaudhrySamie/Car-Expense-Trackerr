@@ -16,7 +16,16 @@ import CustomDatePicker from '../components/common/CustomDatePicker';
 import { SHADOWS, TYPOGRAPHY } from '../utils/theme';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { formatDisplayDate, formatDateToISO } from '../utils/dateHelpers';
+import { getFriendlyDataErrorMessage } from '../utils/authErrors';
 type ExpenseListRouteProp = RouteProp<RootStackParamList, 'ExpenseList'>;
+
+const DESCRIPTION_PLACEHOLDERS: Record<string, string> = {
+  Mechanical: 'e.g. Brake Pad Replacement',
+  Electrical: 'e.g. Battery Replacement',
+  BodyWork: 'e.g. Front Bumper Repaint',
+  Tax: 'e.g. Annual Token Tax Renewal',
+  Other: 'e.g. Car Wash & Detailing',
+};
 
 export default function ExpenseListScreen() {
   const { t } = useTranslation();
@@ -25,6 +34,7 @@ export default function ExpenseListScreen() {
   const route = useRoute<ExpenseListRouteProp>();
   const { colors, isDarkMode } = useThemeColors();
   const { carId, category } = route.params;
+  const placeholderText = DESCRIPTION_PLACEHOLDERS[category] || 'Enter a short description';
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,10 +106,12 @@ export default function ExpenseListScreen() {
          visible: true,
          type: 'success',
          title: t('common.success'),
-         message: editingExpenseId ? t('expense_list.expense_updated') : t('expense_list.expense_logged')
+         message: editingExpenseId
+           ? t('expense_list.expense_updated', { defaultValue: 'Expense updated successfully.' })
+           : t('expense_list.expense_logged', { defaultValue: 'Expense added successfully.' })
        });
     } catch (error: any) {
-      setStatusModal({ visible: true, type: 'error', title: 'Error', message: error.message });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: getFriendlyDataErrorMessage(error, editingExpenseId ? 'update' : 'save') });
     } finally {
       setSaving(false);
     }
@@ -151,29 +163,29 @@ export default function ExpenseListScreen() {
 
   const renderExpenseItem = ({ item, index }: { item: Expense, index: number }) => (
     <AnimatedCard delay={index * 50} style={[styles.expenseCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <View style={[styles.expenseIcon, { backgroundColor: isDarkMode ? '#1e293b' : colors.background }]}>
-        <Ionicons name="receipt-outline" size={22} color={colors.primary} />
-      </View>
-      <View style={styles.expenseInfo}>
-        <Text style={[styles.expenseTitle, { color: colors.text }]} numberOfLines={1}>{item.workName}</Text>
+      <Text style={[styles.expenseTitle, { color: colors.text }]} numberOfLines={2} ellipsizeMode="tail">{item.workName}</Text>
+      <View style={styles.expenseDetailsRow}>
+        <View style={[styles.expenseIcon, { backgroundColor: isDarkMode ? '#1e293b' : colors.background }]}>
+          <Ionicons name="receipt-outline" size={22} color={colors.primary} />
+        </View>
         <Text style={[styles.expenseDate, { color: colors.textSecondary }]}>{formatDisplayDate(item.date)}</Text>
-      </View>
-      <View style={styles.expenseRight}>
-        <Text style={[styles.expenseAmount, { color: colors.text }]}>{currency} {item.amount?.toLocaleString(undefined, { minimumFractionDigits: 0 })}</Text>
-        <View style={styles.actionRow}>
-          <TouchableOpacity onPress={() => handleEditPress(item)} style={styles.actionIcon}>
-            <Ionicons name="create-outline" size={16} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => item.id && handleDeleteExpense(item.id)} style={styles.actionIcon}>
-            <Ionicons name="trash-outline" size={16} color={colors.danger} />
-          </TouchableOpacity>
+        <View style={styles.expenseRight}>
+          <Text style={[styles.expenseAmount, { color: colors.text }]} numberOfLines={1}>{currency} {item.amount?.toLocaleString(undefined, { minimumFractionDigits: 0 })}</Text>
+          <View style={styles.actionRow}>
+            <TouchableOpacity onPress={() => handleEditPress(item)} style={styles.actionIcon}>
+              <Ionicons name="create-outline" size={16} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => item.id && handleDeleteExpense(item.id)} style={styles.actionIcon}>
+              <Ionicons name="trash-outline" size={16} color={colors.danger} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </AnimatedCard>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <Header title={getCategoryTitle()} />
 
        <View style={[styles.totalSection, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
@@ -183,14 +195,16 @@ export default function ExpenseListScreen() {
 
       <View style={styles.listContainer}>
          <View style={styles.listHeader}>
-           <Text style={styles.listTitle}>{t('expense_list.recent_history')}</Text>
+           <Text style={[styles.listTitle, { color: colors.text }]}>{t('expense_list.recent_history')}</Text>
            <TouchableOpacity
-             style={styles.addBtnSmall}
+             style={[styles.addBtnSmall, { backgroundColor: colors.primary }]}
              onPress={() => { resetForm(); setModalVisible(true); }}
              activeOpacity={0.7}
+             accessibilityRole="button"
+             accessibilityLabel={t('expense_list.add_record')}
            >
-             <Ionicons name="add" size={18} color="#FFF" />
-             <Text style={styles.addBtnText}> {t('expense_list.add_record')}</Text>
+             <Ionicons name="add" size={20} color="#FFF" />
+             <Text style={styles.addBtnText}>{t('expense_list.add_record')}</Text>
            </TouchableOpacity>
          </View>
 
@@ -205,8 +219,10 @@ export default function ExpenseListScreen() {
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <View style={styles.emptyState}>
-                <Ionicons name="document-text-outline" size={56} color="#CBD5E1" />
-                <Text style={styles.emptyText}>{t('expense_list.no_expenses')}</Text>
+                <View style={[styles.emptyIcon, { backgroundColor: colors.accentLight }]}>
+                  <Ionicons name="document-text-outline" size={34} color={colors.primary} />
+                </View>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('expense_list.no_expenses')}</Text>
               </View>
             }
           />
@@ -224,13 +240,22 @@ export default function ExpenseListScreen() {
               <View style={{ flex: 1 }} />
             </TouchableWithoutFeedback>
 
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
               <View style={styles.modalHeader}>
                 <View>
-                  <Text style={styles.modalTitle}>{editingExpenseId ? t('expense_list.edit_expense') : t('expense_list.add_expense')}</Text>
-                  <Text style={styles.modalSubtitle}>{getCategoryTitle()}</Text>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>
+                    {editingExpenseId
+                      ? t('expense_list.edit_expense', { defaultValue: 'Edit Expense' })
+                      : t('expense_list.add_expense', { defaultValue: 'Add Expense' })}
+                  </Text>
+                  <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>{getCategoryTitle()}</Text>
                 </View>
-                <TouchableOpacity onPress={() => { setModalVisible(false); resetForm(); }}>
+                <TouchableOpacity
+                  onPress={() => { setModalVisible(false); resetForm(); }}
+                  style={[styles.closeButton, { backgroundColor: isDarkMode ? colors.border : '#F1F5F9' }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close expense form"
+                >
                   <Ionicons name="close" size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
@@ -245,13 +270,35 @@ export default function ExpenseListScreen() {
                   </View>
  
                  <View style={styles.formGroup}>
-                   <Text style={styles.label}>{category === 'Tax' ? t('expense_list.purpose') : t('expense_list.description')}</Text>
-                   <TextInput style={styles.input} placeholder={t('common.placeholder_desc')} value={workName} onChangeText={setWorkName} />
+                   <Text style={[styles.label, { color: colors.text }]}>
+                     {category === 'Tax'
+                       ? t('expense_list.purpose', { defaultValue: 'Purpose' })
+                       : t('expense_list.description', { defaultValue: 'Description' })}
+                   </Text>
+                   <TextInput
+                     style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                     placeholder={placeholderText}
+                     placeholderTextColor={colors.textSecondary}
+                     selectionColor={colors.primary}
+                     value={workName}
+                     onChangeText={setWorkName}
+                     maxLength={60}
+                   />
+                   <Text style={[styles.characterCounter, { color: colors.textSecondary }]}>{workName.length}/60</Text>
                  </View>
  
                  <View style={styles.formGroup}>
-                   <Text style={styles.label}>{t('expense_list.amount_label').replace('(PKR)', `(${currency})`)}</Text>
-                   <TextInput style={styles.input} placeholder="0" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+                   <Text style={[styles.label, { color: colors.text }]}>{t('expense_list.amount_label').replace('(PKR)', `(${currency})`)}</Text>
+                   <TextInput
+                     style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                     placeholder="0"
+                     placeholderTextColor={colors.textSecondary}
+                     selectionColor={colors.primary}
+                     keyboardType="numeric"
+                     maxLength={9}
+                     value={amount}
+                     onChangeText={setAmount}
+                   />
                  </View>
 
                 <AnimatedButton
@@ -263,7 +310,7 @@ export default function ExpenseListScreen() {
               </ScrollView>
               
               {/* Filler to prevent gaps on Android during keyboard transition */}
-              <View style={{ height: 600, backgroundColor: '#FFF', position: 'absolute', bottom: -600, left: 0, right: 0 }} />
+              <View style={{ height: 600, backgroundColor: colors.surface, position: 'absolute', bottom: -600, left: 0, right: 0 }} />
             </View>
           </KeyboardAvoidingView>
         </View>
@@ -303,41 +350,40 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.h1,
     fontSize: 40,
   },
-  listContainer: { flex: 1, padding: 20 },
+  listContainer: { flex: 1, paddingHorizontal: 20, paddingTop: 20 },
   listHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18,
   },
   listTitle: { ...TYPOGRAPHY.h2 },
   addBtnSmall: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 16,
+    minHeight: 46,
+    paddingHorizontal: 14,
+    borderRadius: 14,
     ...SHADOWS.soft,
   },
-  addBtnText: { color: '#FFF', ...TYPOGRAPHY.h3, fontSize: 13, marginLeft: 4 },
-  flatListContent: { paddingBottom: 40 },
+  addBtnText: { color: '#FFF', ...TYPOGRAPHY.h3, fontSize: 13, marginLeft: 6 },
+  flatListContent: { paddingBottom: 32 },
   expenseCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     padding: 16,
     borderRadius: 20,
     marginBottom: 12,
     ...SHADOWS.soft,
   },
+  expenseDetailsRow: { flexDirection: 'row', alignItems: 'center' },
   expenseIcon: {
     width: 44, height: 44, borderRadius: 12,
-    justifyContent: 'center', alignItems: 'center', marginRight: 16,
+    justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
-  expenseInfo: { flex: 1 },
-  expenseTitle: { ...TYPOGRAPHY.h3, fontSize: 16, marginBottom: 4 },
-  expenseDate: { ...TYPOGRAPHY.caption },
+  expenseTitle: { ...TYPOGRAPHY.h3, fontSize: 16, lineHeight: 21, marginBottom: 12 },
+  expenseDate: { ...TYPOGRAPHY.caption, flex: 1 },
   expenseRight: { alignItems: 'flex-end' },
   expenseAmount: { ...TYPOGRAPHY.h3 },
   actionRow: { flexDirection: 'row', marginTop: 4 },
-  actionIcon: { padding: 4, marginLeft: 8 },
-  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
+  actionIcon: { padding: 8, marginLeft: 4 },
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, paddingHorizontal: 24 },
+  emptyIcon: { width: 76, height: 76, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
   emptyText: { marginTop: 16, ...TYPOGRAPHY.body },
 
   // Modal Styles
@@ -350,6 +396,7 @@ const styles = StyleSheet.create({
     ...SHADOWS.medium,
   },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+  closeButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   modalTitle: { ...TYPOGRAPHY.h2 },
   modalSubtitle: { ...TYPOGRAPHY.caption, marginTop: 2 },
   formGroup: { marginBottom: 20 },
@@ -360,5 +407,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 56,
     ...TYPOGRAPHY.body,
+  },
+  characterCounter: {
+    ...TYPOGRAPHY.caption,
+    textAlign: 'right',
+    marginTop: 6,
+    marginRight: 4,
   },
 });

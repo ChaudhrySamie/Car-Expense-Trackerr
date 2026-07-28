@@ -15,6 +15,10 @@ import CustomStatusModal from '../components/common/CustomStatusModal';
 import { SHADOWS, TYPOGRAPHY } from '../utils/theme';
 import { useThemeColors } from '../hooks/useThemeColors';
 
+const MAX_MILEAGE_KM = 10_000_000;
+const MAX_PURCHASE_PRICE = 100_000_000;
+const MAX_ENGINE_CC = 20_000;
+
 export default function AddCarScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
@@ -23,7 +27,7 @@ export default function AddCarScreen() {
   const isEdit = !!editCar;
 
   const { user, cars, setSelectedCar, currency } = useStore();
-  const { colors, isDarkMode } = useThemeColors();
+  const { colors } = useThemeColors();
 
   const [form, setForm] = useState({
     name: editCar?.name || '',
@@ -54,8 +58,30 @@ export default function AddCarScreen() {
         visible: true,
         type: 'error',
         title: t('common.error'),
-        message: t('common.fill_fields')
+        message: t('common.fill_fields', { defaultValue: 'Please complete the vehicle name, model, and year.' })
       });
+      return;
+    }
+
+    const year = Number(form.year);
+    const engineCC = form.engineCC ? Number(form.engineCC) : 0;
+    const mileage = form.mileage ? Number(form.mileage) : 0;
+    const purchasePrice = form.purchasePrice ? Number(form.purchasePrice) : 0;
+
+    if (!Number.isInteger(year) || year < 1886 || year > new Date().getFullYear() + 1) {
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: 'Enter a valid 4-digit manufacturing year.' });
+      return;
+    }
+    if (form.engineCC && (!Number.isFinite(engineCC) || engineCC <= 0 || engineCC > MAX_ENGINE_CC)) {
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: `Engine capacity must be between 1 and ${MAX_ENGINE_CC.toLocaleString()} cc.` });
+      return;
+    }
+    if (form.mileage && (!Number.isFinite(mileage) || mileage < 0 || mileage > MAX_MILEAGE_KM)) {
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: `Mileage must be between 0 and ${MAX_MILEAGE_KM.toLocaleString()} km.` });
+      return;
+    }
+    if (form.purchasePrice && (!Number.isFinite(purchasePrice) || purchasePrice <= 0 || purchasePrice > MAX_PURCHASE_PRICE)) {
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: `Purchase price must be between 1 and ${MAX_PURCHASE_PRICE.toLocaleString()}.` });
       return;
     }
 
@@ -120,7 +146,7 @@ export default function AddCarScreen() {
     }
   };
 
-  const renderInput = (label: string, value: string, key: string, placeholder: string, keyboardType: any = 'default', half: boolean = false) => (
+  const renderInput = (label: string, value: string, key: string, placeholder: string, keyboardType: any = 'default', half: boolean = false, maxLength?: number) => (
     <View style={[styles.formGroup, half && { flex: 1 }]}>
       <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
       <TextInput 
@@ -130,21 +156,24 @@ export default function AddCarScreen() {
         value={value} 
         onChangeText={(t) => updateForm(key, t)} 
         keyboardType={keyboardType}
+        maxLength={maxLength}
+        selectionColor={colors.primary}
       />
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <Header title={isEdit ? t('add_car.edit_title') : t('add_car.add_title')} />
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background }]}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('add_car.section_details')}</Text>
@@ -155,13 +184,13 @@ export default function AddCarScreen() {
             <Text style={[styles.label, { color: colors.text }]}>{t('add_car.type_label')}</Text>
             <View style={styles.typeButtonsRow}>
               <TouchableOpacity
-                style={[styles.typeButton, { backgroundColor: colors.surface, borderColor: colors.border }, form.type === 'car' && [styles.typeButtonActive, { borderColor: colors.primary, backgroundColor: isDarkMode ? '#1e293b' : '#EBF4FF' }]]}
+                style={[styles.typeButton, { backgroundColor: colors.surface, borderColor: colors.border }, form.type === 'car' && [styles.typeButtonActive, { borderColor: colors.primary, backgroundColor: colors.accentLight }]]}
                 onPress={() => updateForm('type', 'car')}
               >
                 <Text style={[styles.typeButtonText, { color: colors.textSecondary }, form.type === 'car' && [styles.typeButtonTextActive, { color: colors.primary }]]}>{t('add_car.type_car')} 🚗</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.typeButton, { backgroundColor: colors.surface, borderColor: colors.border }, form.type === 'bike' && [styles.typeButtonActive, { borderColor: colors.primary, backgroundColor: isDarkMode ? '#1e293b' : '#EBF4FF' }], { marginRight: 0 }]}
+                style={[styles.typeButton, { backgroundColor: colors.surface, borderColor: colors.border }, form.type === 'bike' && [styles.typeButtonActive, { borderColor: colors.primary, backgroundColor: colors.accentLight }], { marginRight: 0 }]}
                 onPress={() => updateForm('type', 'bike')}
               >
                 <Text style={[styles.typeButtonText, { color: colors.textSecondary }, form.type === 'bike' && [styles.typeButtonTextActive, { color: colors.primary }]]}>{t('add_car.type_bike')} 🏍️</Text>
@@ -169,15 +198,15 @@ export default function AddCarScreen() {
             </View>
           </View>
 
-          {renderInput(t('add_car.name_label'), form.name, 'name', 'e.g. Honda Civic')}
+          {renderInput(t('add_car.name_label'), form.name, 'name', 'e.g. Honda Civic', 'default', false, 40)}
           
           <View style={styles.row}>
-            {renderInput(t('add_car.model_label'), form.model, 'model', 'e.g. Oriel', 'default', true)}
+            {renderInput(t('add_car.model_label'), form.model, 'model', 'e.g. Oriel', 'default', true, 30)}
             <View style={{ width: 16 }} />
-            {renderInput(t('add_car.year_label'), form.year, 'year', 'e.g. 2022', 'numeric', true)}
+            {renderInput(t('add_car.year_label'), form.year, 'year', 'e.g. 2022', 'numeric', true, 4)}
           </View>
 
-          {renderInput(t('add_car.plate_label'), form.plate, 'plate', 'e.g. ABC 123')}
+          {renderInput(t('add_car.plate_label'), form.plate, 'plate', 'e.g. ABC 123', 'default', false, 15)}
 
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('add_car.section_technical')}</Text>
@@ -185,12 +214,12 @@ export default function AddCarScreen() {
           </View>
 
           <View style={styles.row}>
-            {renderInput(t('add_car.engine_cc'), form.engineCC, 'engineCC', 'e.g. 1800', 'numeric', true)}
+            {renderInput(t('add_car.engine_cc'), form.engineCC, 'engineCC', 'e.g. 1800', 'numeric', true, 5)}
             <View style={{ width: 16 }} />
-            {renderInput(t('add_car.mileage_label'), form.mileage, 'mileage', 'e.g. 15000 km', 'numeric', true)}
+            {renderInput(t('add_car.mileage_label'), form.mileage, 'mileage', 'e.g. 15000 km', 'numeric', true, 8)}
           </View>
 
-          {renderInput(t('add_car.price_label').replace('(PKR)', `(${currency})`), form.purchasePrice, 'purchasePrice', 'e.g. 2500000', 'numeric')}
+          {renderInput(t('add_car.price_label').replace('(PKR)', `(${currency})`), form.purchasePrice, 'purchasePrice', 'e.g. 2500000', 'numeric', false, 9)}
 
           <AnimatedButton 
             title={isEdit ? t('add_car.update_btn') : t('add_car.add_btn')}
