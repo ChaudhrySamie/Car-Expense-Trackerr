@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, SafeAreaView, Platform, Switch, Alert, I18nManager, DevSettings, Modal } from 'react-native';
+import {  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,  Platform, Switch, Alert, I18nManager, DevSettings, Modal  } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import { useStore, Car } from '../context/useStore';
@@ -234,7 +235,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.bgDecor1, { backgroundColor: colors.accentLight }]} />
       <View style={[styles.bgDecor2, { backgroundColor: colors.accentLight }]} />
       
@@ -441,6 +442,19 @@ export default function HomeScreen() {
                 />
               </View>
             }
+            ListFooterComponent={
+              <View style={styles.footer}>
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate('About')} 
+                  style={styles.brandingContainer} 
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.brandingText, { color: colors.textSecondary }]}>⚡ Developed By </Text>
+                  <Text style={[styles.brandingName, { color: colors.primary }]}>Chaudhry Samie</Text>
+                </TouchableOpacity>
+                <Text style={[styles.versionText, { color: colors.textSecondary, opacity: 0.5 }]}>v1.0.0</Text>
+              </View>
+            }
           />
         )}
       </View>
@@ -448,18 +462,6 @@ export default function HomeScreen() {
       {cars.length > 0 && cars.length < (user?.maxVehicles || 5) && (
         <FloatingActionButton onPress={() => navigation.navigate('AddCar')} />
       )}
-
-      <View style={styles.footer}>
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('About')} 
-          style={styles.brandingContainer} 
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.brandingText, { color: colors.textSecondary }]}>⚡ Developed By </Text>
-          <Text style={[styles.brandingName, { color: colors.primary }]}>Chaudhry Samie</Text>
-        </TouchableOpacity>
-        <Text style={[styles.versionText, { color: colors.textSecondary, opacity: 0.5 }]}>v1.0.0</Text>
-      </View>
 
       <SelectionModal
         visible={showCarMenu}

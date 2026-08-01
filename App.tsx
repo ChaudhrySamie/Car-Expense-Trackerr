@@ -4,12 +4,16 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import './i18n';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { I18nManager } from 'react-native';
+import { I18nManager, Platform } from 'react-native';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 
-import { auth, db } from './services/firebase';
+import firebase, { auth, db } from './services/firebase';
 import { useStore, Car } from './context/useStore';
 
 // Screens
@@ -52,6 +56,56 @@ export type RootStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+async function setupAnnouncementNotifications() {
+  if (Platform.OS === 'web' || !Device.isDevice) {
+    return;
+  }
+
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    let finalStatus = status;
+
+    if (status !== 'granted') {
+      const permission = await Notifications.requestPermissionsAsync();
+      finalStatus = permission.status;
+    }
+
+    if (finalStatus !== 'granted') {
+      return;
+    }
+
+    const isExpoGo = Constants.appOwnership === 'expo';
+    
+    if (isExpoGo) {
+      console.log('Skipping remote push setup — not supported in Expo Go. Use a development build to test this.');
+      return;
+    }
+
+    const messagingService = (firebase as any).messaging?.();
+    if (!messagingService?.subscribeToTopic || !messagingService?.onMessage) {
+      return;
+    }
+
+    await messagingService.subscribeToTopic('announcements');
+
+    messagingService.onMessage(async (remoteMessage: any) => {
+      const title = remoteMessage?.notification?.title || 'Announcement';
+      const body = remoteMessage?.notification?.body || 'A new announcement is available.';
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          data: { type: 'announcement', remoteMessage },
+        },
+        trigger: null,
+      });
+    });
+  } catch (error) {
+    console.error('Failed to configure announcement notifications:', error);
+  }
+}
 
  export default function App() {
   const { user, setUser, setLanguage, setCurrency, isDarkMode, toggleDarkMode, isDeleting, deletingMessage } = useStore();
@@ -144,17 +198,26 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
     SplashScreen.hideAsync().catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (authReady && settingsReady) {
+      setupAnnouncementNotifications();
+    }
+  }, [authReady, settingsReady]);
+
   if (!settingsReady || !authReady) {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <StatusBar style="light" />
-        <AppSplashScreen />
-      </GestureHandlerRootView>
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <StatusBar style="light" />
+          <AppSplashScreen />
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
       <NavigationContainer>
         <Stack.Navigator 
@@ -194,5 +257,6 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
       </NavigationContainer>
       <CustomLoader visible={isDeleting} message={deletingMessage} />
     </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }

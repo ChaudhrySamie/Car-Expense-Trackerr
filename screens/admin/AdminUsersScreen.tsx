@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import {
+import { 
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
-  ActivityIndicator, SafeAreaView, ScrollView, Modal, KeyboardAvoidingView, Platform, Dimensions
-} from 'react-native';
+  ActivityIndicator,  ScrollView, Modal, KeyboardAvoidingView, Platform, Dimensions
+ } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { db } from '../../services/firebase';
 import Header from '../../components/common/Header';
@@ -313,7 +314,7 @@ export default function AdminUsersScreen() {
 
   // ── Main JSX ──────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.safeArea}>
       <Header title="User Management" />
 
       {/* Search Bar */}

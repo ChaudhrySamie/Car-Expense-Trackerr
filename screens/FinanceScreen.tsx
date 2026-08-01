@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, SafeAreaView, KeyboardAvoidingView, Platform, Modal, ScrollView, Dimensions, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import {  View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator,  KeyboardAvoidingView, Platform, Modal, ScrollView, Dimensions, TouchableWithoutFeedback, Keyboard  } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +8,7 @@ import { RootStackParamList } from '../App';
 import { addExpenseToDb, subscribeToExpensesByCategory, updateExpenseInDb, deleteExpenseFromDb, deleteExpensesByCategory, Expense } from '../services/db';
 
 import { useStore } from '../context/useStore';
+import { requestNotificationPermission, scheduleFinanceReminder, cancelFinanceReminders } from '../utils/financeReminders';
 
 // Premium Components
 import Header from '../components/common/Header';
@@ -100,6 +102,10 @@ export default function FinanceScreen() {
     return () => unsubscribe();
   }, [carId]);
 
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
   const handleSaveSetup = async () => {
      if (!totalPrice || !downPayment || !monthlyInstallment || !tenureMonths || !startDate) {
        setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('finance.details_required') });
@@ -138,6 +144,29 @@ export default function FinanceScreen() {
     setSaving(true);
     try {
       const principal = totalPriceNum - downPaymentNum;
+      // Calculate next payment date to schedule reminder
+      const manualPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const manualMonths = Math.floor(manualPaid / installmentNum);
+      const paidMonths = alreadyPaidMonthsNum + manualMonths;
+      const startD = new Date(startDate);
+      startD.setMonth(startD.getMonth() + paidMonths);
+      const nextPaymentDate = startD.toISOString().split('T')[0];
+
+      // Cancel old reminders if editing
+      if (setupDetails?.purpose) {
+        try {
+          const oldConfig = JSON.parse(setupDetails.purpose);
+          if (oldConfig.reminderNotificationIds) {
+            await cancelFinanceReminders(oldConfig.reminderNotificationIds);
+          }
+        } catch (e) {}
+      }
+
+      // Schedule new reminders
+      const selectedCarObj = useStore.getState().cars.find(c => c.id === carId);
+      const carName = selectedCarObj ? `${selectedCarObj.name} ${selectedCarObj.model}` : 'your vehicle';
+      const newNotificationIds = await scheduleFinanceReminder(carId, carName, nextPaymentDate, installmentNum);
+
       const setupPkg = {
         totalPrice: totalPriceNum,
         downPayment: downPaymentNum,
@@ -146,7 +175,8 @@ export default function FinanceScreen() {
         tenure: tenureNum,
         startDate,
         initialPaidMonths: alreadyPaidMonthsNum,
-        scenario
+        scenario,
+        reminderNotificationIds: newNotificationIds
       };
 
       const setupExp: Expense = {
@@ -200,6 +230,15 @@ export default function FinanceScreen() {
         await updateExpenseInDb(editingPayment.id, p);
       } else {
         await addExpenseToDb(p);
+      }
+
+      if (setupDetails?.purpose && payType === 'Monthly Installment') {
+        try {
+          const existingConfig = JSON.parse(setupDetails.purpose);
+          if (existingConfig?.reminderNotificationIds?.length) {
+            await cancelFinanceReminders(existingConfig.reminderNotificationIds);
+          }
+        } catch (e) {}
       }
 
       setPaymentModalVisible(false);
@@ -376,7 +415,7 @@ export default function FinanceScreen() {
 
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       <Header title={t('finance.title')} onBackPress={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

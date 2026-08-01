@@ -1,14 +1,14 @@
 import React from 'react';
-import {
+import { 
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
+  
   ScrollView,
   Linking,
-  Image,
-} from 'react-native';
+  Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -47,7 +47,7 @@ export default function AboutScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <Header title="About Developer" showBack={true} />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -76,7 +76,7 @@ export default function AboutScreen() {
             <Text style={[styles.descText, { color: colors.text }]}>
               Mile Mint is a{' '}
               <Text style={[styles.highlight, { color: colors.primary }]}>free</Text>
-              {' '}vehicle expense and maintenance tracker built to help you stay on top of fuel, service, and finance costs — all in one place.
+              {' '}vehicle expense and maintenance tracker built to help you stay on top of fuel, service, and finance costs ï¿½ all in one place.
             </Text>
             <Text style={[styles.descText, { color: colors.text, marginTop: 10 }]}>
               This app is{' '}
@@ -142,7 +142,7 @@ export default function AboutScreen() {
         {/* Footer */}
         <View style={styles.versionRow}>
           <Text style={[styles.versionText, { color: colors.textSecondary }]}>Mile Mint  v1.0.0</Text>
-          <Text style={[styles.versionText, { color: colors.textSecondary }]}>Made with love in Pakistan</Text>
+          
         </View>
 
       </ScrollView>

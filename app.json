@@ -12,11 +12,9 @@
       "backgroundColor": "#020B1E"
     },
     "ios": {
-      "supportsTablet": true,
-      "newArchEnabled": false
+      "supportsTablet": true
     },
     "android": {
-      "newArchEnabled": false,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/icon.png"
@@ -29,7 +27,14 @@
       "expo-font",
       "expo-asset",
       "@react-native-community/datetimepicker",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffffff"
+        }
+      ]
     ]
   }
 }

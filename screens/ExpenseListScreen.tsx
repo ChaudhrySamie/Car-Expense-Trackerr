@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, SafeAreaView, Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import {  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,  Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Alert, TouchableWithoutFeedback, Keyboard  } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../App';
 import { fetchExpensesByCategory, addExpenseToDb, updateExpenseInDb, deleteExpenseFromDb, Expense } from '../services/db';
@@ -185,7 +186,7 @@ export default function ExpenseListScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <Header title={getCategoryTitle()} />
 
        <View style={[styles.totalSection, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>

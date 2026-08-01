@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, SafeAreaView, Platform } from 'react-native';
+import {  View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator,  Platform, Alert  } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-gifted-charts';
@@ -8,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { RootStackParamList } from '../App';
 import { useStore, Car } from '../context/useStore';
 import { getCarById, subscribeToExpensesByCar } from '../services/db';
+import { exportVehicleReport } from '../utils/exportReport';
 
 // Premium Components
 import Header from '../components/common/Header';
@@ -27,6 +29,7 @@ export default function CarDashboardScreen() {
    const { colors, isDarkMode } = useThemeColors();
 
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [financials, setFinancials] = useState({
     totalPaid: 0,
     upcoming: 0,
@@ -118,10 +121,26 @@ export default function CarDashboardScreen() {
     navigation.navigate(category.screen, { carId, category: category.id });
   };
 
+  const handleExportReport = async () => {
+    if (!selectedCar) return;
+    setExporting(true);
+    try {
+      await exportVehicleReport(selectedCar, currency);
+    } catch (err: any) {
+      Alert.alert(
+        'Export Failed',
+        err?.message || 'Something went wrong while generating the PDF. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (!selectedCar) return null;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: colors.background }]}>
        <Header title={t('dashboard.title', { name: selectedCar?.name || 'Car' })} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -216,7 +235,7 @@ export default function CarDashboardScreen() {
                    adjustsFontSizeToFit
                    minimumFontScale={0.62}
                  >
-                   {currency} {financials.totalPaid.toLocaleString()}
+                  {financials.totalPaid.toLocaleString()}
                  </Text>
                </View>
                <View style={[styles.splitDivider, { backgroundColor: colors.border }]} />
@@ -228,7 +247,7 @@ export default function CarDashboardScreen() {
                    adjustsFontSizeToFit
                    minimumFontScale={0.62}
                  >
-                   {currency} {financials.upcoming.toLocaleString()}
+                   {financials.upcoming.toLocaleString()}
                  </Text>
                </View>
             </View>
@@ -277,6 +296,32 @@ export default function CarDashboardScreen() {
           ))}
         </View>
 
+        {/* ── Export Report Button ──────────────────────────────────── */}
+        <TouchableOpacity
+          style={[
+            styles.exportButton,
+            { backgroundColor: colors.surface, borderColor: colors.primary },
+            exporting && { opacity: 0.7 },
+          ]}
+          onPress={handleExportReport}
+          activeOpacity={0.75}
+          disabled={exporting}
+          accessibilityLabel="Export vehicle report as PDF"
+          accessibilityRole="button"
+        >
+          {exporting ? (
+            <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 10 }} />
+          ) : (
+            <Ionicons name="document-text-outline" size={20} color={colors.primary} style={{ marginRight: 10 }} />
+          )}
+          <Text style={[styles.exportButtonText, { color: colors.primary }]}>
+            {exporting ? 'Generating PDF…' : 'Export Report'}
+          </Text>
+          {!exporting && (
+            <Ionicons name="share-outline" size={18} color={colors.primary} style={{ marginLeft: 8 }} />
+          )}
+        </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -288,6 +333,24 @@ const styles = StyleSheet.create({
   carInfoCard: { borderRadius: 32, padding: 24, marginBottom: 32, backgroundColor: '#FFF', ...SHADOWS.medium },
   carHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   carImageContainer: { marginRight: 16 },
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    marginBottom: 24,
+    marginHorizontal: 4,
+    paddingVertical: 15,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    ...SHADOWS.soft,
+  },
+  exportButtonText: {
+    ...TYPOGRAPHY.body,
+    fontWeight: '700' as any,
+    fontSize: 15,
+  },
   carIconBadge: {
     width: 64, height: 74, borderRadius: 20, backgroundColor: '#F0F9FF',
     justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E0F2FE'

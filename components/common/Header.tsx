@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TYPOGRAPHY } from '../../utils/theme';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
@@ -35,9 +36,10 @@ export default function Header({
   };
 
   const { colors } = useThemeColors();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderBottomColor: colors.border, paddingTop: insets.top }]}>
       <View style={styles.content}>
         {(showBack || leftElement) && (
           <View style={styles.sideColumn}>
@@ -75,7 +77,6 @@ export default function Header({
 const styles = StyleSheet.create({
   container: {
     borderBottomWidth: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     zIndex: 10    
   },
   content: {
