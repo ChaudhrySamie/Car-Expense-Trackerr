@@ -125,11 +125,11 @@ export default function FinanceScreen() {
       return;
     }
     if (totalPriceNum <= 0 || installmentNum <= 0 || !Number.isInteger(tenureNum) || tenureNum > MAX_LOAN_TENURE_MONTHS) {
-      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: `Loan period must be between 1 and ${MAX_LOAN_TENURE_MONTHS} months.` });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('finance.invalid_tenure', { max: MAX_LOAN_TENURE_MONTHS }) });
       return;
     }
     if (!Number.isInteger(alreadyPaidMonthsNum) || alreadyPaidMonthsNum < 0 || alreadyPaidMonthsNum > tenureNum) {
-      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: 'Already paid months cannot be greater than the loan period.' });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('finance.invalid_paid_months') });
       return;
     }
     if (downPaymentNum >= totalPriceNum) {
@@ -477,7 +477,7 @@ export default function FinanceScreen() {
                <AnimatedCard style={[styles.statBox, { backgroundColor: colors.surface, borderColor: colors.border }]} delay={100}>
                  <Ionicons name="time-outline" size={22} color={colors.primary} />
                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('finance.next_payment')}</Text>
-                 <Text style={[styles.statValue, { color: colors.text }, stats.isOverdue && { color: colors.danger }]}>{stats.status === t('finance.status_completed') ? 'None' : stats.nextPaymentDate}</Text>
+                 <Text style={[styles.statValue, { color: colors.text }, stats.isOverdue && { color: colors.danger }]}>{stats.status === t('finance.status_completed') ? t('common.none') : stats.nextPaymentDate}</Text>
                </AnimatedCard>
                <AnimatedCard style={[styles.statBox, { backgroundColor: colors.surface, borderColor: colors.border }]} delay={200}>
                  <Ionicons name="flag-outline" size={22} color={colors.secondary} />
@@ -527,7 +527,7 @@ export default function FinanceScreen() {
               scrollEnabled={false}
               ListEmptyComponent={
                 <View style={styles.innerEmpty}>
-                  <Text style={styles.innerEmptyText}>No transactions recorded yet.</Text>
+                  <Text style={styles.innerEmptyText}>{t('finance.no_transactions')}</Text>
                 </View>
               }
               ListFooterComponent={
@@ -569,7 +569,7 @@ export default function FinanceScreen() {
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                 {setupStep === 1 && (
                   <View style={styles.stepOne}>
-                    <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>Welcome! How would you like to start?</Text>
+                    <Text style={[styles.stepLabel, { color: colors.textSecondary }]}>{t('finance.welcome_setup')}</Text>
                     <TouchableOpacity
                       style={[styles.scenarioCard, { backgroundColor: colors.background, borderColor: colors.border }]}
                       onPress={() => { setScenario('new'); setSetupStep(2); setAlreadyPaidMonths('0'); }}
@@ -579,7 +579,7 @@ export default function FinanceScreen() {
                       </View>
                        <View style={{ flex: 1 }}>
                          <Text style={[styles.scenarioTitle, { color: colors.text }]}>{t('finance.new_loan')}</Text>
-                         <Text style={[styles.scenarioDesc, { color: colors.textSecondary }]}>Brand new finance plan for your car.</Text>
+                         <Text style={[styles.scenarioDesc, { color: colors.textSecondary }]}>{t('finance.new_loan_desc')}</Text>
                        </View>
                       <Ionicons name="chevron-forward" size={20} color={colors.border} />
                     </TouchableOpacity>
@@ -593,7 +593,7 @@ export default function FinanceScreen() {
                       </View>
                        <View style={{ flex: 1 }}>
                          <Text style={[styles.scenarioTitle, { color: colors.text }]}>{t('finance.existing_loan')}</Text>
-                         <Text style={[styles.scenarioDesc, { color: colors.textSecondary }]}>Migrate your current payment history.</Text>
+                         <Text style={[styles.scenarioDesc, { color: colors.textSecondary }]}>{t('finance.existing_loan_desc')}</Text>
                        </View>
                       <Ionicons name="chevron-forward" size={20} color={colors.border} />
                     </TouchableOpacity>
@@ -604,24 +604,21 @@ export default function FinanceScreen() {
                    <View style={styles.stepDetails}>
                      <View style={styles.formGroup}>
                        <Text style={[styles.inputLabel, { color: colors.text }]}>{t('finance.total_price')}</Text>
-                       <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={9} value={totalPrice} onChangeText={setTotalPrice} placeholder="Market Price" placeholderTextColor={colors.textSecondary} />
+                       <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={9} value={totalPrice} onChangeText={setTotalPrice} placeholder={t('finance.placeholder_market_price')} placeholderTextColor={colors.textSecondary} />
                      </View>
                      <View style={styles.row}>
                        <View style={[styles.formGroup, { flex: 1, marginRight: 12 }]}>
                          <Text style={[styles.inputLabel, { color: colors.text }]}>{t('finance.down_payment')}</Text>
-                         <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={9} value={downPayment} onChangeText={setDownPayment} placeholder="Amount Paid" placeholderTextColor={colors.textSecondary} />
+                         <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={9} value={downPayment} onChangeText={setDownPayment} placeholder={t('finance.placeholder_amount_paid')} placeholderTextColor={colors.textSecondary} />
                        </View>
                        <View style={[styles.formGroup, { flex: 1 }]}>
                          <Text style={[styles.inputLabel, { color: colors.text }]}>{t('finance.monthly_emi')}</Text>
-                         <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={9} value={monthlyInstallment} onChangeText={setMonthlyInstallment} placeholder="Monthly Dues" placeholderTextColor={colors.textSecondary} />
+                         <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={9} value={monthlyInstallment} onChangeText={setMonthlyInstallment} placeholder={t('finance.placeholder_monthly_dues')} placeholderTextColor={colors.textSecondary} />
                        </View>
                      </View>
                      <AnimatedButton
-                       title="Continue to Timeline"
+                       title={t('finance.continue_timeline')}
                        onPress={() => {
-                         // FIX: previously this jumped to Step 3 with zero validation,
-                         // letting users reach "Finalize" with an invalid down payment
-                         // (e.g. down payment >= total price) before ever seeing an error.
                          const tp = parseFloat(totalPrice);
                          const dp = parseFloat(downPayment);
                          const inst = parseFloat(monthlyInstallment);
@@ -638,7 +635,7 @@ export default function FinanceScreen() {
                      />
                     <TouchableOpacity onPress={() => setSetupStep(1)} style={[styles.secondaryBtn, { borderColor: colors.primary }]}>
                       <Ionicons name="arrow-back" size={16} color={colors.primary} style={{ marginRight: 6 }} />
-                      <Text style={[styles.secondaryBtnText, { color: colors.primary }]}>Change Scenario</Text>
+                      <Text style={[styles.secondaryBtnText, { color: colors.primary }]}>{t('finance.change_scenario')}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -648,7 +645,7 @@ export default function FinanceScreen() {
                      <View style={styles.row}>
                        <View style={[styles.formGroup, { flex: 1, marginRight: 12 }]}>
                          <Text style={[styles.inputLabel, { color: colors.text }]}>{t('finance.loan_period')}</Text>
-                         <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={3} value={tenureMonths} onChangeText={setTenureMonths} placeholder="Up to 600 months" placeholderTextColor={colors.textSecondary} />
+                         <TextInput style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]} keyboardType="numeric" maxLength={3} value={tenureMonths} onChangeText={setTenureMonths} placeholder={t('finance.placeholder_months', { max: MAX_LOAN_TENURE_MONTHS })} placeholderTextColor={colors.textSecondary} />
                        </View>
                         <View style={[styles.formGroup, { flex: 1 }]}>
                           <CustomDatePicker 
@@ -712,7 +709,7 @@ export default function FinanceScreen() {
               <View style={styles.modalHeader}>
                  <View>
                    <Text style={[styles.modalTitle, { color: colors.text }]}>{editingPayment ? t('finance.edit_transaction') : t('finance.log_transaction')}</Text>
-                   <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>{editingPayment ? 'Modify existing record' : 'Monthly payment or extra credit'}</Text>
+                   <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>{editingPayment ? t('finance.modify_record') : t('finance.payment_subtitle')}</Text>
                  </View>
                 <TouchableOpacity onPress={() => { setPaymentModalVisible(false); setEditingPayment(null); }}>
                   <Ionicons name="close" size={24} color={colors.text} />
@@ -737,7 +734,7 @@ export default function FinanceScreen() {
 
                  <View style={styles.formGroup}>
                    <CustomDatePicker 
-                     label="Date" 
+                     label={t('common.date')} 
                      value={payDate} 
                      onChange={setPayDate} 
                    />

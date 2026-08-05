@@ -125,7 +125,7 @@ export default function LoginScreen() {
         visible: true,
         type: 'success',
         title: t('auth.reset_sent'),
-        message: `${t('auth.reset_sent_msg', { email })}\n\n${t('auth.reset_spam_reminder', { defaultValue: "If you don't receive it shortly, check your spam or junk folder." })}`
+        message: `${t('auth.reset_sent_msg', { email })}\n\n${t('auth.reset_spam_reminder')}`
       });
     } catch (error: any) {
       console.error(error);

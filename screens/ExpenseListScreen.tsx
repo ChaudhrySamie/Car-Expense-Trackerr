@@ -108,8 +108,8 @@ export default function ExpenseListScreen() {
          type: 'success',
          title: t('common.success'),
          message: editingExpenseId
-           ? t('expense_list.expense_updated', { defaultValue: 'Expense updated successfully.' })
-           : t('expense_list.expense_logged', { defaultValue: 'Expense added successfully.' })
+           ? t('expense_list.expense_updated')
+           : t('expense_list.expense_logged')
        });
     } catch (error: any) {
       setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: getFriendlyDataErrorMessage(error, editingExpenseId ? 'update' : 'save') });
@@ -246,8 +246,8 @@ export default function ExpenseListScreen() {
                 <View>
                   <Text style={[styles.modalTitle, { color: colors.text }]}>
                     {editingExpenseId
-                      ? t('expense_list.edit_expense', { defaultValue: 'Edit Expense' })
-                      : t('expense_list.add_expense', { defaultValue: 'Add Expense' })}
+                      ? t('expense_list.edit_expense')
+                      : t('expense_list.add_expense')}
                   </Text>
                   <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>{getCategoryTitle()}</Text>
                 </View>
@@ -273,8 +273,8 @@ export default function ExpenseListScreen() {
                  <View style={styles.formGroup}>
                    <Text style={[styles.label, { color: colors.text }]}>
                      {category === 'Tax'
-                       ? t('expense_list.purpose', { defaultValue: 'Purpose' })
-                       : t('expense_list.description', { defaultValue: 'Description' })}
+                       ? t('expense_list.purpose')
+                       : t('expense_list.description')}
                    </Text>
                    <TextInput
                      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}

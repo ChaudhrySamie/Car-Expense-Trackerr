@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Car-Expense-Tracker",
-    "slug": "Car-Expense-Tracker",
+    "name": "Mile Mint",
+    "slug": "mile-mint",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,6 +15,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.chaudhrysamie.milemint",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/icon.png"

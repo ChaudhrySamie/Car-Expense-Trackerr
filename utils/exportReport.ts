@@ -16,19 +16,19 @@ import { Car } from '../context/useStore';
 
 // ─── theme colours mirrored from utils/theme.ts (light palette) ──────────────
 const C = {
-  primary:       '#0EA5E9',
-  secondary:     '#8B5CF6',
-  success:       '#10B981',
-  warning:       '#F59E0B',
-  danger:        '#EF4444',
-  text:          '#0F172A',
+  primary: '#0EA5E9',
+  secondary: '#8B5CF6',
+  success: '#10B981',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+  text: '#0F172A',
   textSecondary: '#64748B',
-  border:        '#E2E8F0',
-  surface:       '#FFFFFF',
-  accentLight:   '#E0F2FE',
-  fuel:          '#F97316',
-  oil:           '#10B981',
-  finance:       '#8B5CF6',
+  border: '#E2E8F0',
+  surface: '#FFFFFF',
+  accentLight: '#E0F2FE',
+  fuel: '#F97316',
+  oil: '#10B981',
+  finance: '#8B5CF6',
 };
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ function buildHtml(params: {
   } = params;
 
   // ── Summary totals ──────────────────────────────────────────────────────────
-  const totalFuelCost    = fuelLogs.reduce((s, e) => s + (e.amount || 0), 0);
+  const totalFuelCost = fuelLogs.reduce((s, e) => s + (e.amount || 0), 0);
   const totalExpenseCost = expenseLogs.reduce((s, e) => s + (e.amount || 0), 0);
   const totalServiceCost = oilLogs.reduce((s, e) => s + (e.amount || 0), 0);
 
@@ -94,15 +94,15 @@ function buildHtml(params: {
   if (financeSetup) {
     try {
       const cfg = JSON.parse(financeSetup.purpose || '{}');
-      const downPayment        = cfg.downPayment || 0;
-      const initialPaidMonths  = cfg.initialPaidMonths || 0;
-      const installment        = cfg.installment || 0;
-      const paymentsTotal      = financePayments.reduce((s, e) => s + (e.amount || 0), 0);
-      totalFinancePaid         = downPayment + (initialPaidMonths * installment) + paymentsTotal;
-      financeLabel             = fmt(totalFinancePaid, currency);
+      const downPayment = cfg.downPayment || 0;
+      const initialPaidMonths = cfg.initialPaidMonths || 0;
+      const installment = cfg.installment || 0;
+      const paymentsTotal = financePayments.reduce((s, e) => s + (e.amount || 0), 0);
+      totalFinancePaid = downPayment + (initialPaidMonths * installment) + paymentsTotal;
+      financeLabel = fmt(totalFinancePaid, currency);
     } catch {
       totalFinancePaid = financeSetup.amount || 0;
-      financeLabel     = fmt(totalFinancePaid, currency);
+      financeLabel = fmt(totalFinancePaid, currency);
     }
   }
 
@@ -111,38 +111,38 @@ function buildHtml(params: {
   // ── Fuel rows ────────────────────────────────────────────────────────────────
   const fuelRows = fuelLogs.length
     ? fuelLogs
-        .sort((a, b) => safeDate(b.date).localeCompare(safeDate(a.date)))
-        .map(e => trow([
-          safeDate(e.date),
-          e.liters != null ? `${Number(e.liters).toFixed(2)} L` : '—',
-          fmt(e.amount || 0, currency),
-          e.odometer ? `${e.odometer} km` : '—',
-          e.mileage  ? `${Number(e.mileage).toFixed(1)} km/L` : '—',
-        ])).join('')
+      .sort((a, b) => safeDate(b.date).localeCompare(safeDate(a.date)))
+      .map(e => trow([
+        safeDate(e.date),
+        e.liters != null ? `${Number(e.liters).toFixed(2)} L` : '—',
+        fmt(e.amount || 0, currency),
+        e.odometer ? `${e.odometer} km` : '—',
+        e.mileage ? `${Number(e.mileage).toFixed(1)} km/L` : '—',
+      ])).join('')
     : emptyRow(5);
 
   // ── Expense rows ──────────────────────────────────────────────────────────
   const expenseRows = expenseLogs.length
     ? expenseLogs
-        .sort((a, b) => safeDate(b.date).localeCompare(safeDate(a.date)))
-        .map(e => trow([
-          safeDate(e.date),
-          e.category || '—',
-          fmt(e.amount || 0, currency),
-          e.purpose || e.workName || '—',
-        ])).join('')
+      .sort((a, b) => safeDate(b.date).localeCompare(safeDate(a.date)))
+      .map(e => trow([
+        safeDate(e.date),
+        e.category || '—',
+        fmt(e.amount || 0, currency),
+        e.purpose || e.workName || '—',
+      ])).join('')
     : emptyRow(4);
 
   // ── Oil/Service rows ──────────────────────────────────────────────────────
   const oilRows = oilLogs.length
     ? oilLogs
-        .sort((a, b) => safeDate(b.date).localeCompare(safeDate(a.date)))
-        .map(e => trow([
-          safeDate(e.date),
-          e.oilType || e.brand || e.workName || 'Oil Change',
-          fmt(e.amount || 0, currency),
-          (e.odometer || e.currentMileage) ? `${e.odometer || e.currentMileage} km` : '—',
-        ])).join('')
+      .sort((a, b) => safeDate(b.date).localeCompare(safeDate(a.date)))
+      .map(e => trow([
+        safeDate(e.date),
+        e.oilType || e.brand || e.workName || 'Oil Change',
+        fmt(e.amount || 0, currency),
+        (e.odometer || e.currentMileage) ? `${e.odometer || e.currentMileage} km` : '—',
+      ])).join('')
     : emptyRow(4);
 
   // ── Finance EMI rows ────────────────────────────────────────────────────────
@@ -406,7 +406,7 @@ function buildHtml(params: {
       <div class="footer-row">
         <span>Generated by <strong class="footer-brand">Mile Mint</strong></span>
         <span class="footer-sep">&bull;</span>
-        <span>Developed by <strong class="footer-brand">Chaudhry Samie</strong></span>
+        <span>⚡Developed by <strong class="footer-brand">Chaudhry Samie</strong></span>
       </div>
       <div class="footer-email">chaudhrysamie@gmail.com</div>
     </div>
@@ -428,12 +428,12 @@ export async function exportVehicleReport(car: Car, currency: string): Promise<v
   const allExpenses = await fetchExpensesByCar(car.id);
 
   // 2. Partition by category
-  const fuelLogs        = allExpenses.filter(e => e.category === 'Fuel');
-  const oilLogs         = allExpenses.filter(e => e.category === 'OilChange');
-  const financeAll      = allExpenses.filter(e => e.category === 'Finance');
-  const financeSetup    = financeAll.find(e => e.workName === 'Finance_Setup') ?? null;
+  const fuelLogs = allExpenses.filter(e => e.category === 'Fuel');
+  const oilLogs = allExpenses.filter(e => e.category === 'OilChange');
+  const financeAll = allExpenses.filter(e => e.category === 'Finance');
+  const financeSetup = financeAll.find(e => e.workName === 'Finance_Setup') ?? null;
   const financePayments = financeAll.filter(e => e.workName !== 'Finance_Setup');
-  const expenseLogs     = allExpenses.filter(
+  const expenseLogs = allExpenses.filter(
     e => !['Fuel', 'OilChange', 'Finance'].includes(e.category)
   );
 
@@ -451,7 +451,7 @@ export async function exportVehicleReport(car: Car, currency: string): Promise<v
 
   // 5. Build the display filename (used in share sheet title)
   const vehicleSlug = (car.name || 'Vehicle').replace(/\s+/g, '_');
-  const fileName    = `${vehicleSlug}_FullReport_${exportDate}.pdf`;
+  const fileName = `${vehicleSlug}_FullReport_${exportDate}.pdf`;
 
   // 6. Open native share sheet — user can Save to Files, email, WhatsApp, etc.
   //    expo-print already writes the file locally; we share directly from that URI.

@@ -1,13 +1,15 @@
-import React from 'react';
-import { 
+import React, { useEffect, useState } from 'react';
+import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  
+  ActivityIndicator,
   ScrollView,
   Linking,
-  Image } from 'react-native';
+  Alert,
+  Image
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +18,9 @@ import { useThemeColors } from '../hooks/useThemeColors';
 import { SHADOWS, TYPOGRAPHY } from '../utils/theme';
 import Header from '../components/common/Header';
 import AnimatedCard from '../components/common/AnimatedCard';
+import { useTranslation } from 'react-i18next';
+import { checkAppVersion } from '../utils/versionCheck';
+import { APP_VERSION } from '../constants/appInfo';
 
 const LINKS = [
   {
@@ -41,14 +46,39 @@ const LINKS = [
 export default function AboutScreen() {
   const navigation = useNavigation<any>();
   const { colors, isDarkMode } = useThemeColors();
+  const { t } = useTranslation();
 
-  const openLink = (url: string) => {
-    Linking.openURL(url).catch(() => {});
+  const [versionStatus, setVersionStatus] = useState<any>(null);
+
+  useEffect(() => {
+    checkAppVersion().then(status => setVersionStatus(status));
+  }, []);
+
+  const openLink = async (url: string) => {
+    if (!url) {
+      Alert.alert('Error', 'No URL provided.');
+      return;
+    }
+    let finalUrl = url;
+    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:')) {
+      finalUrl = 'https://' + url;
+    }
+    
+    try {
+      const supported = await Linking.canOpenURL(finalUrl);
+      if (supported) {
+        await Linking.openURL(finalUrl);
+      } else {
+        Alert.alert('Error', `Your device cannot open this type of link: ${finalUrl}`);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Something went wrong while trying to open the link.');
+    }
   };
 
   return (
     <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <Header title="About Developer" showBack={true} />
+      <Header title={t('about.title')} showBack={true} />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
@@ -66,7 +96,7 @@ export default function AboutScreen() {
 
           <View style={[styles.roleBadge, { backgroundColor: isDarkMode ? '#1e3a5f' : '#E0F2FE' }]}>
             <Ionicons name="code-slash-outline" size={14} color={colors.primary} />
-            <Text style={[styles.roleText, { color: colors.primary }]}>Full Stack Developer</Text>
+            <Text style={[styles.roleText, { color: colors.primary }]}>{t('about.role')}</Text>
           </View>
 
           <View style={[styles.descBox, {
@@ -74,24 +104,24 @@ export default function AboutScreen() {
             borderColor: isDarkMode ? '#1e3a5f' : '#BAE6FD',
           }]}>
             <Text style={[styles.descText, { color: colors.text }]}>
-              Mile Mint is a{' '}
-              <Text style={[styles.highlight, { color: colors.primary }]}>free</Text>
-              {' '}vehicle expense and maintenance tracker built to help you stay on top of fuel, service, and finance costs � all in one place.
+              {t('about.desc1_start')}
+              <Text style={[styles.highlight, { color: colors.primary }]}>{t('about.desc1_highlight')}</Text>
+              {t('about.desc1_end')}
             </Text>
             <Text style={[styles.descText, { color: colors.text, marginTop: 10 }]}>
-              This app is{' '}
-              <Text style={[styles.highlight, { color: colors.success }]}>completely free to use</Text>
-              , with{' '}
-              <Text style={[styles.highlight, { color: colors.success }]}>no ads</Text>
-              {' '}and{' '}
-              <Text style={[styles.highlight, { color: colors.success }]}>no hidden charges</Text>
-              .
+              {t('about.desc2_start')}
+              <Text style={[styles.highlight, { color: colors.success }]}>{t('about.desc2_highlight1')}</Text>
+              {t('about.desc2_mid1')}
+              <Text style={[styles.highlight, { color: colors.success }]}>{t('about.desc2_highlight2')}</Text>
+              {t('about.desc2_mid2')}
+              <Text style={[styles.highlight, { color: colors.success }]}>{t('about.desc2_highlight3')}</Text>
+              {t('about.desc2_end')}
             </Text>
           </View>
         </AnimatedCard>
 
         {/* Links Section */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Connect with Me</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('about.connect')}</Text>
 
         {LINKS.map((link, index) => (
           <AnimatedCard
@@ -124,10 +154,10 @@ export default function AboutScreen() {
         >
           <View style={styles.supportHeader}>
             <Ionicons name="heart-outline" size={22} color={colors.success} />
-            <Text style={[styles.supportTitle, { color: colors.success }]}>Support My Work</Text>
+            <Text style={[styles.supportTitle, { color: colors.success }]}>{t('about.support_title')}</Text>
           </View>
           <Text style={[styles.supportText, { color: colors.text }]}>
-            If you enjoy using Mile Mint, consider supporting my work by sharing the app or connecting with me on LinkedIn.
+            {t('about.support_desc')}
           </Text>
           <TouchableOpacity
             style={[styles.supportBtn, { backgroundColor: colors.success }]}
@@ -135,14 +165,50 @@ export default function AboutScreen() {
             activeOpacity={0.8}
           >
             <Ionicons name="logo-linkedin" size={18} color="#FFF" />
-            <Text style={styles.supportBtnText}>Support / Connect</Text>
+            <Text style={styles.supportBtnText}>{t('about.support_btn')}</Text>
           </TouchableOpacity>
+        </AnimatedCard>
+
+        {/* Version Check Section */}
+        <AnimatedCard delay={500} style={[styles.versionCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.versionHeader}>
+            <Text style={[styles.versionTitle, { color: colors.text }]}>{t('about.version')} {APP_VERSION}</Text>
+            {!versionStatus ? (
+               <ActivityIndicator size="small" color={colors.primary} />
+            ) : versionStatus.status === 'upToDate' ? (
+              <View style={[styles.statusBadge, { backgroundColor: isDarkMode ? '#064e3b' : '#d1fae5' }]}>
+                <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+                <Text style={[styles.statusText, { color: colors.success }]}>{t('about.up_to_date')}</Text>
+              </View>
+            ) : (
+              <View style={[styles.statusBadge, { backgroundColor: isDarkMode ? '#78350f' : '#fef3c7' }]}>
+                <Ionicons name="alert-circle" size={14} color="#f59e0b" />
+                <Text style={[styles.statusText, { color: '#f59e0b' }]}>{t('about.update_available')}</Text>
+              </View>
+            )}
+          </View>
+          {versionStatus?.status === 'updateAvailable' && (
+            <View style={styles.updateInfoBox}>
+              {!!versionStatus.updateMessage && (
+                <Text style={[styles.updateMessage, { color: colors.textSecondary }]}>{versionStatus.updateMessage}</Text>
+              )}
+              {!!versionStatus.downloadUrl && (
+                <TouchableOpacity
+                  style={[styles.updateBtn, { backgroundColor: colors.primary }]}
+                  onPress={() => openLink(versionStatus.downloadUrl)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.updateBtnText}>{t('about.update_now')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </AnimatedCard>
 
         {/* Footer */}
         <View style={styles.versionRow}>
-          <Text style={[styles.versionText, { color: colors.textSecondary }]}>Mile Mint  v1.0.0</Text>
-          
+          <Text style={[styles.versionText, { color: colors.textSecondary }]}>Mile Mint v{APP_VERSION}</Text>
+
         </View>
 
       </ScrollView>
@@ -283,6 +349,55 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.h3,
     fontSize: 15,
     marginLeft: 8,
+  },
+
+  versionCard: {
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 24,
+    ...SHADOWS.soft,
+  },
+  versionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  versionTitle: {
+    ...TYPOGRAPHY.h3,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    ...TYPOGRAPHY.caption,
+    fontWeight: '700' as any,
+    marginLeft: 4,
+  },
+  updateInfoBox: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(150, 150, 150, 0.2)',
+  },
+  updateMessage: {
+    ...TYPOGRAPHY.body,
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  updateBtn: {
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  updateBtnText: {
+    ...TYPOGRAPHY.h3,
+    color: '#FFF',
+    fontSize: 15,
   },
 
   versionRow: { alignItems: 'center' },

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {  View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,  Platform, Switch, Alert, I18nManager, DevSettings, Modal  } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Platform, Switch, Alert, I18nManager, DevSettings, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
@@ -20,6 +20,10 @@ import CustomStatusModal from '../components/common/CustomStatusModal';
 import SelectionModal from '../components/common/SelectionModal';
 import { SHADOWS, TYPOGRAPHY } from '../utils/theme';
 
+// Car Doctor
+import CarDoctorButton from '../components/CarDoctorButton';
+import CarDoctorModal from '../components/CarDoctorModal';
+
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { user, cars, setCars, setSelectedCar, setLanguage, currency, setCurrency, isDarkMode, toggleDarkMode } = useStore();
@@ -31,13 +35,15 @@ export default function HomeScreen() {
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const { t, i18n } = useTranslation();
-  
+
   const [statusModal, setStatusModal] = useState<{
     visible: boolean;
     type: 'success' | 'error' | 'info';
     title: string;
     message: string;
   }>({ visible: false, type: 'info', title: '', message: '' });
+
+  const [restartModal, setRestartModal] = useState(false);
 
   const [confirmDeleteModal, setConfirmDeleteModal] = useState({
     visible: false,
@@ -46,11 +52,12 @@ export default function HomeScreen() {
 
   const [globalNotifs, setGlobalNotifs] = useState<any[]>([]);
   const [userNotifs, setUserNotifs] = useState<any[]>([]);
+  const [showCarDoctor, setShowCarDoctor] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       setShowProfileMenu(false);
-      return () => {};
+      return () => { };
     }, [])
   );
 
@@ -121,16 +128,16 @@ export default function HomeScreen() {
       setStatusModal({
         visible: true,
         type: 'success',
-        title: 'Deleted',
-        message: 'Vehicle removed successfully'
+        title: t('common.success'),
+        message: t('common.deleted')
       });
     } catch (error) {
       console.error(error);
       setStatusModal({
         visible: true,
         type: 'error',
-        title: 'Error',
-        message: 'Failed to delete car'
+        title: t('common.error'),
+        message: t('common.delete_failed')
       });
     }
   };
@@ -154,21 +161,17 @@ export default function HomeScreen() {
   const handleLanguageChange = async (lang: string) => {
     setShowLanguageModal(false);
     setShowProfileMenu(false);
-    
+
     const isRTL = lang === 'ar' || lang === 'ur';
     const currentRTL = I18nManager.isRTL;
-    
+
     await i18n.changeLanguage(lang);
     setLanguage(lang);
     await AsyncStorage.setItem('user_language', lang);
-    
+
     if (isRTL !== currentRTL) {
       I18nManager.forceRTL(isRTL);
-      Alert.alert(
-        'Restart Required',
-        'The layout change requires an app restart to apply correctly.',
-        [{ text: 'OK', onPress: () => Platform.OS === 'android' ? DevSettings.reload() : null }]
-      );
+      setRestartModal(true);
     }
   };
 
@@ -186,12 +189,12 @@ export default function HomeScreen() {
   };
 
   const renderCarCard = ({ item, index }: { item: Car; index: number }) => (
-    <AnimatedCard 
+    <AnimatedCard
       delay={index * 100}
       style={styles.carCardContainer}
     >
-      <TouchableOpacity 
-        style={styles.carCardInner} 
+      <TouchableOpacity
+        style={styles.carCardInner}
         onPress={() => handleCarPress(item)}
         activeOpacity={0.7}
       >
@@ -206,10 +209,10 @@ export default function HomeScreen() {
           <View style={styles.carTitleRow}>
             <Text style={[styles.carName, { color: colors.text }]} numberOfLines={1}>{item.name} {item.model}</Text>
             <View style={[styles.statusBadge, { backgroundColor: isDarkMode ? '#064e3b' : '#F0FDF4' }]}>
-               <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
-               <Text style={[styles.statusText, { color: colors.success }]}>{t('common.active')}</Text>
-             </View>
-           </View>
+              <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
+              <Text style={[styles.statusText, { color: colors.success }]}>{t('common.active')}</Text>
+            </View>
+          </View>
           <Text style={[styles.carModel, { color: colors.textSecondary }]}> {item.year} • {item.plate} </Text>
           <View style={styles.carSpecsRow}>
             <View style={[styles.specItem, { backgroundColor: isDarkMode ? '#1e293b' : '#F8FAFC' }]}>
@@ -223,8 +226,8 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
-        <TouchableOpacity 
-          style={styles.optionsButton} 
+        <TouchableOpacity
+          style={styles.optionsButton}
           onPress={() => handleCarOptions(item)}
           activeOpacity={0.5}
         >
@@ -238,14 +241,14 @@ export default function HomeScreen() {
     <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.bgDecor1, { backgroundColor: colors.accentLight }]} />
       <View style={[styles.bgDecor2, { backgroundColor: colors.accentLight }]} />
-      
-       <Header 
-         title={user ? t('home.welcome', { name: user.name || user.email?.split('@')[0] || 'User' }) : t('common.garage')} 
-         subtitle={t('home.subtitle')}
+
+      <Header
+        title={user ? t('home.welcome', { name: user.name || user.email?.split('@')[0] || 'User' }) : t('common.garage')}
+        subtitle={t('home.subtitle')}
         showBack={false}
         alignLeft={true}
         rightElement={
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setShowProfileMenu((visible) => !visible)}
             style={styles.avatarBtn}
             activeOpacity={0.7}
@@ -401,7 +404,7 @@ export default function HomeScreen() {
                     </TouchableOpacity>
                   </AnimatedCard>
                 ))}
-                
+
                 {cars.length > 0 && (
                   <View style={styles.listHeader}>
                     <View style={styles.summaryContainer}>
@@ -422,8 +425,20 @@ export default function HomeScreen() {
                         </View>
                       </View>
                     </View>
-                    <Text style={[styles.listTitle, { color: colors.text }]}>{t('home.recent_history')}</Text>
-                    <Text style={[styles.listSubtitle, { color: colors.textSecondary }]}>{t('home.manage_garage')}</Text>
+
+                    {/* Title row with Car Doctor button aligned to the right */}
+                    <View style={styles.listHeaderTitleRow}>
+                      <View style={styles.listHeaderTexts}>
+                        <Text style={[styles.listTitle, { color: colors.text }]}>{t('home.recent_history')}</Text>
+                        <Text style={[styles.listSubtitle, { color: colors.textSecondary }]}>{t('home.manage_garage')}</Text>
+                      </View>
+                      <CarDoctorButton
+                        inline
+                        compact
+                        showLabel={false}
+                        onPress={() => setShowCarDoctor(true)}
+                      />
+                    </View>
                   </View>
                 )}
               </View>
@@ -435,107 +450,138 @@ export default function HomeScreen() {
                 </View>
                 <Text style={[styles.emptyStateText, { color: colors.text }]}>{t('home.empty_title')}</Text>
                 <Text style={[styles.emptyStateSubText, { color: colors.textSecondary }]}>{t('home.empty_subtitle')}</Text>
-                <AnimatedButton 
-                  title={t('common.add_vehicle')} 
+                <AnimatedButton
+                  title={t('common.add_vehicle')}
                   onPress={() => navigation.navigate('AddCar')}
                   style={{ width: 180, marginTop: 32 }}
                 />
-              </View>
-            }
-            ListFooterComponent={
-              <View style={styles.footer}>
-                <TouchableOpacity 
-                  onPress={() => navigation.navigate('About')} 
-                  style={styles.brandingContainer} 
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.brandingText, { color: colors.textSecondary }]}>⚡ Developed By </Text>
-                  <Text style={[styles.brandingName, { color: colors.primary }]}>Chaudhry Samie</Text>
-                </TouchableOpacity>
-                <Text style={[styles.versionText, { color: colors.textSecondary, opacity: 0.5 }]}>v1.0.0</Text>
               </View>
             }
           />
         )}
       </View>
 
+      <View style={[styles.fixedBottomFooter, { borderTopColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('About')}
+          style={styles.fixedBrandingContainer}
+          activeOpacity={0.6}
+        >
+          <Text style={[styles.fixedBrandingText, { color: colors.textSecondary }]}>
+            {t('auth.developed_by').split('Chaudhry Samie').map((part: string, i: number, arr: string[]) => (
+              <React.Fragment key={i}>
+                {part}
+                {i < arr.length - 1 && (
+                  <Text style={[styles.fixedBrandingName, { color: colors.primary }]}>Chaudhry Samie</Text>
+                )}
+              </React.Fragment>
+            ))}
+          </Text>
+          <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 8, fontSize: 10, opacity: 0.7 }}>
+            Mile Mint v1.0.0
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {cars.length > 0 && cars.length < (user?.maxVehicles || 5) && (
-        <FloatingActionButton onPress={() => navigation.navigate('AddCar')} />
+        <FloatingActionButton bottom={98} onPress={() => navigation.navigate('AddCar')} />
       )}
+
+      {/* Car Doctor moved into Recent History header; floating instance removed */}
+
+      <CarDoctorModal
+        visible={showCarDoctor}
+        onClose={() => setShowCarDoctor(false)}
+        userId={user?.uid}
+      />
 
       <SelectionModal
         visible={showCarMenu}
-         title={selectedCarForMenu ? t('car_menu.manage_car', { model: selectedCarForMenu.model }) : t('car_menu.dashboard')}
-         subtitle={selectedCarForMenu?.name}
-         onClose={() => setShowCarMenu(false)}
-         options={[
-           { 
-             label: t('car_menu.dashboard'), 
-             icon: 'speedometer-outline', 
-             onPress: () => selectedCarForMenu && handleCarPress(selectedCarForMenu) 
-           },
-           { 
-             label: t('car_menu.edit_info'), 
-             icon: 'create-outline', 
-             onPress: () => selectedCarForMenu && navigation.navigate('AddCar', { car: selectedCarForMenu }) 
-           },
-           { 
-             label: t('car_menu.delete_vehicle'), 
-             icon: 'trash-outline', 
-             destructive: true, 
-             onPress: () => selectedCarForMenu && confirmDelete(selectedCarForMenu) 
-           },
-         ]}
-       />
+        title={selectedCarForMenu ? t('car_menu.manage_car', { model: selectedCarForMenu.model }) : t('car_menu.dashboard')}
+        subtitle={selectedCarForMenu?.name}
+        onClose={() => setShowCarMenu(false)}
+        options={[
+          {
+            label: t('car_menu.dashboard'),
+            icon: 'speedometer-outline',
+            onPress: () => selectedCarForMenu && handleCarPress(selectedCarForMenu)
+          },
+          {
+            label: t('car_menu.edit_info'),
+            icon: 'create-outline',
+            onPress: () => selectedCarForMenu && navigation.navigate('AddCar', { car: selectedCarForMenu })
+          },
+          {
+            label: t('car_menu.delete_vehicle'),
+            icon: 'trash-outline',
+            destructive: true,
+            onPress: () => selectedCarForMenu && confirmDelete(selectedCarForMenu)
+          },
+        ]}
+      />
 
-       <SelectionModal
-         visible={confirmDeleteModal.visible}
-         title={t('car_menu.are_you_sure')}
-         subtitle={t('car_menu.permanent_remove', { name: confirmDeleteModal.car?.name })}
-         onClose={() => setConfirmDeleteModal({ visible: false, car: null })}
-         options={[
-           { 
-             label: t('car_menu.confirm_delete'), 
-             icon: 'trash', 
-             destructive: true, 
-             onPress: handleDelete 
-           },
-         ]}
-       />
+      <SelectionModal
+        visible={confirmDeleteModal.visible}
+        title={t('car_menu.are_you_sure')}
+        subtitle={t('car_menu.permanent_remove', { name: confirmDeleteModal.car?.name })}
+        onClose={() => setConfirmDeleteModal({ visible: false, car: null })}
+        options={[
+          {
+            label: t('car_menu.confirm_delete'),
+            icon: 'trash',
+            destructive: true,
+            onPress: handleDelete
+          },
+        ]}
+      />
 
-       <SelectionModal
-         visible={showLanguageModal}
-         title={t('common.language')}
-         subtitle="Select your preferred language"
-         onClose={() => setShowLanguageModal(false)}
-         options={[
-           { label: 'English', icon: 'language-outline', onPress: () => handleLanguageChange('en') },
-           { label: 'اردو', icon: 'language-outline', onPress: () => handleLanguageChange('ur') },
-           { label: 'العربية (Beta)', icon: 'language-outline', onPress: () => handleLanguageChange('ar') },
-           { label: '中文 (Beta)', icon: 'language-outline', onPress: () => handleLanguageChange('zh') },
-           { label: '한국어 (Beta)', icon: 'language-outline', onPress: () => handleLanguageChange('ko') },
-         ]}
-       />
+      <SelectionModal
+        visible={showLanguageModal}
+        title={t('common.language')}
+        subtitle="Select your preferred language"
+        onClose={() => setShowLanguageModal(false)}
+        options={[
+          { label: 'English', icon: 'language-outline', onPress: () => handleLanguageChange('en') },
+          { label: 'اردو', icon: 'language-outline', onPress: () => handleLanguageChange('ur') },
+          { label: 'العربية (Beta)', icon: 'language-outline', onPress: () => handleLanguageChange('ar') },
+          { label: '中文 (Beta)', icon: 'language-outline', onPress: () => handleLanguageChange('zh') },
+          { label: '한국어 (Beta)', icon: 'language-outline', onPress: () => handleLanguageChange('ko') },
+        ]}
+      />
 
-       <SelectionModal
-         visible={showCurrencyModal}
-         title={t('common.currency') || 'Currency'}
-         subtitle={`Current: ${currency}`}
-         onClose={() => setShowCurrencyModal(false)}
-         options={[
-           { label: 'PKR 🇵🇰 (Default)', icon: 'cash-outline', onPress: () => handleCurrencyChange('PKR') },
-           { label: 'USD 🇺🇸', icon: 'cash-outline', onPress: () => handleCurrencyChange('USD') },
-           { label: 'AED 🇦🇪', icon: 'cash-outline', onPress: () => handleCurrencyChange('AED') },
-           { label: 'SAR 🇸🇦', icon: 'cash-outline', onPress: () => handleCurrencyChange('SAR') },
-           { label: 'EUR 🇪🇺', icon: 'cash-outline', onPress: () => handleCurrencyChange('EUR') },
-           { label: 'Won (₩) 🇰🇷', icon: 'cash-outline', onPress: () => handleCurrencyChange('KRW') },
-           { label: 'CNY (¥) 🇨🇳', icon: 'cash-outline', onPress: () => handleCurrencyChange('CNY') },
-         ]}
-       />
+      <SelectionModal
+        visible={showCurrencyModal}
+        title={t('common.currency') || 'Currency'}
+        subtitle={`Current: ${currency}`}
+        onClose={() => setShowCurrencyModal(false)}
+        options={[
+          { label: 'PKR 🇵🇰 (Default)', icon: 'cash-outline', onPress: () => handleCurrencyChange('PKR') },
+          { label: 'USD 🇺🇸', icon: 'cash-outline', onPress: () => handleCurrencyChange('USD') },
+          { label: 'AED 🇦🇪', icon: 'cash-outline', onPress: () => handleCurrencyChange('AED') },
+          { label: 'SAR 🇸🇦', icon: 'cash-outline', onPress: () => handleCurrencyChange('SAR') },
+          { label: 'EUR 🇪🇺', icon: 'cash-outline', onPress: () => handleCurrencyChange('EUR') },
+          { label: 'Won (₩) 🇰🇷', icon: 'cash-outline', onPress: () => handleCurrencyChange('KRW') },
+          { label: 'CNY (¥) 🇨🇳', icon: 'cash-outline', onPress: () => handleCurrencyChange('CNY') },
+        ]}
+      />
 
-      <CustomStatusModal 
-        {...statusModal} 
-        onClose={() => setStatusModal({ ...statusModal, visible: false })} 
+      <CustomStatusModal
+        {...statusModal}
+        onClose={() => setStatusModal({ ...statusModal, visible: false })}
+      />
+
+      <CustomStatusModal
+        visible={restartModal}
+        type="info"
+        title={t('common.restart_required_title') || 'Restart Required'}
+        message={t('common.restart_required_msg') || 'Please restart the app to apply language settings.'}
+        btnText={t('common.ok') || 'OK'}
+        onClose={() => {
+          setRestartModal(false);
+          if (Platform.OS === 'android') {
+            DevSettings.reload();
+          }
+        }}
       />
     </SafeAreaView>
   );
@@ -642,7 +688,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 6,
   },
-   logoutText: {
+  logoutText: {
     marginLeft: 12,
     ...TYPOGRAPHY.body,
     fontWeight: '700' as any,
@@ -671,6 +717,17 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 16,
     paddingLeft: 4,
+  },
+  listHeaderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingRight: 4,
+    marginTop: 8,
+  },
+  listHeaderTexts: {
+    flex: 1,
+    paddingRight: 12,
   },
   summaryContainer: {
     marginBottom: 24,
@@ -870,28 +927,26 @@ const styles = StyleSheet.create({
     marginTop: 8,
     lineHeight: 22,
   },
-  footer: {
+  fixedBottomFooter: {
+    paddingVertical: 10,
     alignItems: 'center',
-    paddingVertical: 20,
-    marginBottom: 20,
+    justifyContent: 'center',
+    borderTopWidth: 1,
+    paddingBottom: Platform.OS === 'ios' ? 0 : 10,
   },
-  brandingContainer: {
-    flexDirection: 'row',
+  fixedBrandingContainer: {
+    flexDirection: 'column',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12
+    paddingVertical: 4,
   },
-  brandingText: {
+  fixedBrandingText: {
     ...TYPOGRAPHY.caption,
-    marginRight: 4,
+    fontSize: 11,
+    letterSpacing: 0.5,
+    opacity: 0.8,
   },
-  brandingName: {
-    ...TYPOGRAPHY.caption,
-    fontWeight: '800',
-  },
-  versionText: {
-    ...TYPOGRAPHY.caption,
-    fontSize: 10,
-  },
+  fixedBrandingName: {
+    fontWeight: '700' as any,
+  }
 });

@@ -10,11 +10,14 @@ import { RootStackParamList } from '../App';
 import { useStore, Car } from '../context/useStore';
 import { getCarById, subscribeToExpensesByCar } from '../services/db';
 import { exportVehicleReport } from '../utils/exportReport';
+import { getOrGenerateMonthlySummary, forceRegenerateMonthlySummary } from '../utils/monthlyAiSummary';
+import { calculateHealthScore, HealthScoreResult } from '../utils/vehicleHealthScore';
 
 // Premium Components
 import Header from '../components/common/Header';
 import AnimatedCard from '../components/common/AnimatedCard';
 import AnimatedProgressBar from '../components/common/AnimatedProgressBar';
+import CustomStatusModal from '../components/common/CustomStatusModal';
 import { SHADOWS, TYPOGRAPHY } from '../utils/theme';
 import { useThemeColors } from '../hooks/useThemeColors';
 
@@ -36,6 +39,22 @@ export default function CarDashboardScreen() {
     overallTotal: 0,
     breakdown: [] as any[]
   });
+  
+  const [aiSummary, setAiSummary] = useState<any>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [healthScore, setHealthScore] = useState<HealthScoreResult | null>(null);
+
+  const [statusModal, setStatusModal] = useState<{
+    visible: boolean;
+    type: 'success' | 'error' | 'info';
+    title: string;
+    message: string;
+  }>({ visible: false, type: 'info', title: '', message: '' });
+  // Session guard: only fetch AI once per screen open, not on every expense update
+  const hasFetchedAiRef = React.useRef(false);
+  // Keep latest expenses accessible to the AI effect without re-running it
+  const latestExpensesRef = React.useRef<any[]>([]);
 
   useEffect(() => {
     let unsubscribeExpenses: () => void;
@@ -98,6 +117,65 @@ export default function CarDashboardScreen() {
           overallTotal: overallLifecycleTotal,
           breakdown: breakdownArray
         });
+
+        // ── Vehicle Health Score (read-only, derived from already-fetched expenses) ──
+        try {
+          const oilChangeLogs = expenses.filter((e: any) => e.category === 'OilChange');
+          const lastOilChange = oilChangeLogs.length > 0
+            ? oilChangeLogs.sort((a: any, b: any) => {
+                const dateA = a.date ? new Date(a.date).getTime() : 0;
+                const dateB = b.date ? new Date(b.date).getTime() : 0;
+                return dateB - dateA;
+              })[0]
+            : null;
+          const lastOilChangeOdometer = lastOilChange
+            ? (Number(lastOilChange.odometer || lastOilChange.currentMileage || lastOilChange.mileage || 0) || null)
+            : null;
+
+          const car = useStore.getState().selectedCar as any;
+          const currentOdometer = Number(car?.mileage || 0);
+
+          const financeIsActive = !!setup;
+          const financePaymentsList = expenses.filter((e: any) => e.category === 'Finance' && e.workName !== 'Finance_Setup');
+          const missedOrLateEmiCount = financePaymentsList.filter((e: any) => e.status === 'Overdue').length;
+
+          const hasFuelLogs = expenses.some((e: any) => e.category === 'Fuel');
+          const hasExpenseLogs = expenses.some((e: any) =>
+            !['Finance', 'Fuel', 'OilChange'].includes(e.category) && e.workName !== 'Finance_Setup'
+          );
+          const hasServiceLogs = expenses.some((e: any) => e.category === 'OilChange');
+
+          const now = new Date();
+          const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+          const activeMonths = new Set<string>();
+          expenses.forEach((exp: any) => {
+            if (!exp.date) return;
+            const d = new Date(exp.date);
+            if (d >= threeMonthsAgo) {
+              activeMonths.add(`${d.getFullYear()}-${d.getMonth()}`);
+            }
+          });
+          const monthsWithActivityInLast3 = Math.min(3, activeMonths.size);
+
+          const result = calculateHealthScore({
+            lastOilChangeOdometer,
+            currentOdometer,
+            oilChangeIntervalKm: 5000,
+            documents: [],
+            financeIsActive,
+            missedOrLateEmiCount,
+            hasFuelLogs,
+            hasExpenseLogs,
+            hasServiceLogs,
+            monthsWithActivityInLast3,
+          });
+          setHealthScore(result);
+        } catch (e) {
+          // silently skip — health score failure must never affect the rest of the dashboard
+        }
+
+        // Always keep the latest expenses available for the AI effect
+        latestExpensesRef.current = expenses;
         setLoading(false);
       });
     };
@@ -106,6 +184,36 @@ export default function CarDashboardScreen() {
     return () => { if (unsubscribeExpenses) unsubscribeExpenses(); };
   }, [carId]);
 
+  // Separate effect: fetch AI summary ONCE per screen open, never on expense updates
+  useEffect(() => {
+    if (hasFetchedAiRef.current) return; // already fetched this session
+    hasFetchedAiRef.current = true;
+
+    const userId = useStore.getState().user?.uid || '';
+    const carName = (selectedCar as any)?.name || '';
+    if (!userId || !carName) return;
+
+    setAiLoading(true);
+    // Wait briefly so the subscription has time to populate latestExpensesRef
+    const timer = setTimeout(() => {
+      getOrGenerateMonthlySummary(
+        userId,
+        carId,
+        carName,
+        latestExpensesRef.current,
+        currency,
+        t('common.currency'),
+        (cur, total, mol) => t('dashboard.fallback_summary', { currency: cur, totalSpent: total, moreOrLess: mol }),
+        t('dashboard.more'),
+        t('dashboard.less')
+      ).then(res => setAiSummary(res))
+       .catch(err => console.error('AI Summary Error:', err))
+       .finally(() => setAiLoading(false));
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [carId]); // only re-runs if you navigate to a different car
+
    const categories = [
      { id: 'Mechanical', label: t('categories.Mechanical'), icon: 'construct-outline', color: '#6366F1', screen: 'ExpenseList' },
      { id: 'Electrical', label: t('categories.Electrical'), icon: 'flash-outline', color: '#F59E0B', screen: 'ExpenseList' },
@@ -113,7 +221,7 @@ export default function CarDashboardScreen() {
      { id: 'Fuel', label: t('categories.Fuel'), icon: 'speedometer-outline', color: '#F97316', screen: 'Fuel' },
      { id: 'OilChange', label: t('categories.OilChange'), icon: 'water-outline', color: '#10B981', screen: 'OilChange' },
      { id: 'Finance', label: t('categories.Finance'), icon: 'cash-outline', color: '#8B5CF6', screen: 'Finance' },
-     { id: 'Tax', label: t('dashboard.tax_and_fines', { defaultValue: 'Tax & Fines' }), icon: 'document-text-outline', color: '#EF4444', screen: 'ExpenseList' },
+     { id: 'Tax', label: t('categories.Tax'), icon: 'document-text-outline', color: '#EF4444', screen: 'ExpenseList' },
      { id: 'Other', label: t('categories.Other'), icon: 'ellipsis-horizontal-circle-outline', color: '#64748B', screen: 'ExpenseList' },
    ];
 
@@ -127,13 +235,66 @@ export default function CarDashboardScreen() {
     try {
       await exportVehicleReport(selectedCar, currency);
     } catch (err: any) {
-      Alert.alert(
-        'Export Failed',
-        err?.message || 'Something went wrong while generating the PDF. Please try again.',
-        [{ text: 'OK' }]
-      );
+      setStatusModal({
+        visible: true,
+        type: 'error',
+        title: t('dashboard.export_failed') || 'Export Failed',
+        message: err?.message || t('dashboard.export_failed_msg') || 'Something went wrong.',
+      });
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleRegenerateSummary = async () => {
+    if (isRegenerating || !aiSummary) return;
+    
+    // Cooldown check
+    if (aiSummary.generatedAt) {
+      const now = new Date();
+      const generatedTime = new Date(aiSummary.generatedAt);
+      const diffMinutes = Math.floor((now.getTime() - generatedTime.getTime()) / (1000 * 60));
+      if (diffMinutes < 60) {
+        setStatusModal({
+          visible: true,
+          type: 'info',
+          title: 'Cooldown Active',
+          message: `You can regenerate this summary again in ${60 - diffMinutes} minutes.`,
+        });
+        return;
+      }
+    }
+
+    const userId = useStore.getState().user?.uid || '';
+    const carName = (selectedCar as any)?.name || '';
+    if (!userId || !carName) return;
+
+    setIsRegenerating(true);
+    try {
+      const newSummary = await forceRegenerateMonthlySummary(
+        userId,
+        carId,
+        carName,
+        latestExpensesRef.current,
+        currency,
+        t('common.currency'),
+        (cur, total, mol) => t('dashboard.fallback_summary', { currency: cur, totalSpent: total, moreOrLess: mol }),
+        t('dashboard.more'),
+        t('dashboard.less')
+      );
+      if (newSummary) {
+        setAiSummary(newSummary);
+      }
+    } catch (err: any) {
+      console.error('Manual regenerate failed:', err);
+      setStatusModal({
+        visible: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to regenerate summary. Please try again later.',
+      });
+    } finally {
+      setIsRegenerating(false);
     }
   };
 
@@ -177,10 +338,61 @@ export default function CarDashboardScreen() {
               )}
             </View>
           </View>
+        </AnimatedCard>
 
+        {/* ── Vehicle Health Score Card ───────────────────────────── */}
+        {!loading && healthScore && (() => {
+          const scoreColor =
+            healthScore.color === 'green' ? colors.success
+            : healthScore.color === 'yellow' ? colors.warning
+            : healthScore.color === 'orange' ? '#F97316'
+            : colors.danger;
+          const scoreBg =
+            healthScore.color === 'green' ? (isDarkMode ? '#052e16' : '#F0FDF4')
+            : healthScore.color === 'yellow' ? (isDarkMode ? '#431407' : '#FFFBEB')
+            : healthScore.color === 'orange' ? (isDarkMode ? '#431407' : '#FFF7ED')
+            : (isDarkMode ? '#450a0a' : '#FEF2F2');
+          const scoreBorder =
+            healthScore.color === 'green' ? (isDarkMode ? '#14532d' : '#DCFCE7')
+            : healthScore.color === 'yellow' ? (isDarkMode ? '#78350f' : '#FEF08A')
+            : healthScore.color === 'orange' ? (isDarkMode ? '#7c2d12' : '#FED7AA')
+            : (isDarkMode ? '#7f1d1d' : '#FECACA');
+          return (
+            <AnimatedCard
+              delay={50}
+              style={[
+                styles.healthCard,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
+              <View style={styles.healthHeader}>
+                <Ionicons name="heart-circle-outline" size={20} color={scoreColor} />
+                <Text style={[styles.healthTitle, { color: colors.text }]}>{t('healthScore.title', 'Vehicle Health Score')}</Text>
+              </View>
 
+              <View style={styles.healthBody}>
+                {/* Score circle */}
+                <View style={[styles.scoreCircle, { backgroundColor: scoreBg, borderColor: scoreBorder }]}>
+                  <Text style={[styles.scoreNumber, { color: scoreColor }]}>{healthScore.score}</Text>
+                </View>
 
-          <View style={[styles.wealthContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                {/* Label & issue */}
+                <View style={styles.healthRight}>
+                  <View style={[styles.labelBadge, { backgroundColor: scoreBg, borderColor: scoreBorder }]}>
+                    <Text style={[styles.labelBadgeText, { color: scoreColor }]}>{t(healthScore.labelKey)}</Text>
+                  </View>
+                  <Text style={[styles.healthIssueText, { color: colors.textSecondary }]} numberOfLines={2}>
+                    {healthScore.topIssueKey 
+                      ? t(healthScore.topIssueKey, healthScore.topIssueParams || {}) as string
+                      : t('healthScore.everything_great', 'Everything looks great!') as string}
+                  </Text>
+                </View>
+              </View>
+            </AnimatedCard>
+          );
+        })()}
+
+        <View style={[styles.wealthContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
            <Text style={[styles.wealthLabel, { color: colors.textSecondary }]}>{t('dashboard.total_cost')}</Text>
             {loading ? (
               <ActivityIndicator color={colors.primary} size="small" style={{ marginVertical: 10 }} />
@@ -252,6 +464,39 @@ export default function CarDashboardScreen() {
                </View>
             </View>
           </View>
+
+        {/* Monthly AI Summary Card */}
+        <AnimatedCard style={[styles.aiSummaryCard, { backgroundColor: colors.surface, borderColor: colors.border ,marginBottom:12}]} delay={100}>
+          <View style={styles.aiSummaryHeader}>
+            <Ionicons name="sparkles" size={18} color={colors.primary} />
+            <Text style={[styles.aiSummaryTitle, { color: colors.text }]}>{t('dashboard.ai_summary_title')}</Text>
+            <View style={[styles.aiBadge, { backgroundColor: colors.primary + '20' }]}>
+              <Text style={[styles.aiBadgeText, { color: colors.primary }]}>AI</Text>
+            </View>
+            <TouchableOpacity 
+              style={{ marginLeft: 'auto', padding: 4 }}
+              onPress={handleRegenerateSummary}
+              disabled={isRegenerating || aiLoading}
+            >
+              {isRegenerating ? (
+                <ActivityIndicator size="small" color={colors.textSecondary} />
+              ) : (
+                <Ionicons name="refresh" size={18} color={colors.textSecondary} />
+              )}
+            </TouchableOpacity>
+          </View>
+          {aiLoading ? (
+            <ActivityIndicator color={colors.primary} size="small" style={{ marginVertical: 10 }} />
+          ) : aiSummary ? (
+            <View>
+              <Text style={[styles.aiSummaryText, { color: colors.textSecondary }]}>
+                {aiSummary.summaryText}
+              </Text>
+              <Text style={[styles.aiGeneratedDate, { color: colors.textSecondary + '80' }]}>
+                {t('dashboard.generated_on', { date: aiSummary.generatedAt?.toLocaleDateString() || '' })}
+              </Text>
+            </View>
+          ) : null}
         </AnimatedCard>
 
         {financials.breakdown.length > 0 && (
@@ -315,7 +560,7 @@ export default function CarDashboardScreen() {
             <Ionicons name="document-text-outline" size={20} color={colors.primary} style={{ marginRight: 10 }} />
           )}
           <Text style={[styles.exportButtonText, { color: colors.primary }]}>
-            {exporting ? 'Generating PDF…' : 'Export Report'}
+            {exporting ? t('dashboard.generating_pdf') : t('dashboard.export_report')}
           </Text>
           {!exporting && (
             <Ionicons name="share-outline" size={18} color={colors.primary} style={{ marginLeft: 8 }} />
@@ -323,6 +568,12 @@ export default function CarDashboardScreen() {
         </TouchableOpacity>
 
       </ScrollView>
+
+      <CustomStatusModal
+        {...statusModal}
+        onClose={() => setStatusModal({ ...statusModal, visible: false })}
+      />
+
     </SafeAreaView>
   );
 }
@@ -376,7 +627,50 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.label, textAlign: 'center', marginBottom: 8
   },
   wealthAmount: {
-    ...TYPOGRAPHY.h1, fontSize: 34, lineHeight: 40, textAlign: 'center', marginBottom: 20
+    fontSize: 48,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  aiSummaryCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 0,
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    ...SHADOWS.soft,
+  },
+  aiSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  aiSummaryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+    flex: 1,
+  },
+  aiBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  aiBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  aiSummaryText: {
+    fontSize: 14,
+    fontWeight: '400',
+    lineHeight: 22,
+  },
+  aiGeneratedDate: {
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 8,
+    textAlign: 'right',
   },
   wealthDivider: { height: 1.5, marginBottom: 20 },
   wealthSplit: { flexDirection: 'row', alignItems: 'center' },
@@ -414,4 +708,62 @@ const styles = StyleSheet.create({
     alignItems: 'center', marginBottom: 10
   },
   gridItemText: { ...TYPOGRAPHY.caption, fontWeight: '700', textAlign: 'center', fontSize: 11 },
+
+  // ── Vehicle Health Score Card ──────────────────────────────────────────
+  healthCard: {
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    ...SHADOWS.soft,
+  },
+  healthHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  healthTitle: {
+    ...TYPOGRAPHY.h3,
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  healthBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  scoreCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  scoreNumber: {
+    fontSize: 30,
+    fontWeight: '800' as any,
+    lineHeight: 36,
+  },
+  healthRight: {
+    flex: 1,
+  },
+  labelBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    marginBottom: 10,
+  },
+  labelBadgeText: {
+    ...TYPOGRAPHY.caption,
+    fontWeight: '700' as any,
+    fontSize: 13,
+  },
+  healthIssueText: {
+    ...TYPOGRAPHY.caption,
+    fontSize: 13,
+    lineHeight: 18,
+  },
 });

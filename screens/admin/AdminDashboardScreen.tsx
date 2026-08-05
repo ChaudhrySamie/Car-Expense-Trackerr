@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {  View, Text, StyleSheet,  TouchableOpacity, ScrollView, ActivityIndicator  } from 'react-native';
+import {  View, Text, StyleSheet,  TouchableOpacity, ScrollView, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform  } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -22,6 +22,43 @@ export default function AdminDashboardScreen() {
     totalVehicles: 0,
     totalExpensesAmount: 0
   });
+
+  const [versionModalVisible, setVersionModalVisible] = useState(false);
+  const [versionForm, setVersionForm] = useState({ latestVersion: '', updateMessage: '', downloadUrl: '' });
+  const [savingVersion, setSavingVersion] = useState(false);
+
+  const loadVersionConfig = async () => {
+    try {
+      const docSnap = await db.collection('appConfig').doc('versionInfo').get();
+      if (docSnap.exists) {
+        const data = docSnap.data();
+        setVersionForm({
+          latestVersion: data?.latestVersion || '',
+          updateMessage: data?.updateMessage || '',
+          downloadUrl: data?.downloadUrl || ''
+        });
+      }
+      setVersionModalVisible(true);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const saveVersionConfig = async () => {
+    setSavingVersion(true);
+    try {
+      await db.collection('appConfig').doc('versionInfo').set({
+        latestVersion: versionForm.latestVersion,
+        updateMessage: versionForm.updateMessage,
+        downloadUrl: versionForm.downloadUrl
+      }, { merge: true });
+      setVersionModalVisible(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingVersion(false);
+    }
+  };
 
   useEffect(() => {
     let unsubscribeUsers: () => void;
@@ -234,7 +271,69 @@ export default function AdminDashboardScreen() {
             <Ionicons name="chevron-forward" size={20} color={COLORS.border} />
           </TouchableOpacity>
         </AnimatedCard>
+        
+        <AnimatedCard delay={300} style={styles.menuCard}>
+          <TouchableOpacity 
+            style={styles.menuContent}
+            onPress={loadVersionConfig}
+          >
+            <View style={[styles.iconBox, { backgroundColor: '#FEF3C7' }]}>
+              <Ionicons name="phone-portrait" size={28} color="#F59E0B" />
+            </View>
+            <View style={styles.textStack}>
+              <Text style={styles.menuTitle}>App Version Control</Text>
+              <Text style={styles.menuDesc}>Manage update alerts and app version</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.border} />
+          </TouchableOpacity>
+        </AnimatedCard>
       </ScrollView>
+
+      {/* Version Control Modal */}
+      <Modal visible={versionModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Update App Version</Text>
+              <Text style={styles.modalSubtitle}>Notify users if they are on an old version.</Text>
+
+              <Text style={styles.inputLabel}>Latest Version (e.g. 1.0.0)</Text>
+              <TextInput
+                style={styles.input}
+                value={versionForm.latestVersion}
+                onChangeText={(t) => setVersionForm(p => ({ ...p, latestVersion: t }))}
+                placeholder="1.0.0"
+              />
+
+              <Text style={styles.inputLabel}>Update Message (Optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={versionForm.updateMessage}
+                onChangeText={(t) => setVersionForm(p => ({ ...p, updateMessage: t }))}
+                placeholder="Bug fixes..."
+              />
+
+              <Text style={styles.inputLabel}>Download URL (Optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={versionForm.downloadUrl}
+                onChangeText={(t) => setVersionForm(p => ({ ...p, downloadUrl: t }))}
+                placeholder="https://..."
+                autoCapitalize="none"
+              />
+
+              <View style={styles.modalActionRow}>
+                <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setVersionModalVisible(false)}>
+                  <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalBtnSave} onPress={saveVersionConfig}>
+                  {savingVersion ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.modalBtnSaveText}>Save</Text>}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -264,4 +363,15 @@ const styles = StyleSheet.create({
   textStack: { flex: 1 },
   menuTitle: { ...TYPOGRAPHY.h2, fontSize: 18, color: COLORS.text, marginBottom: 4 },
   menuDesc: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, lineHeight: 18 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalContent: { backgroundColor: '#FFF', borderRadius: 24, padding: 24, width: '100%', ...SHADOWS.large },
+  modalTitle: { ...TYPOGRAPHY.h2, color: COLORS.text, marginBottom: 8 },
+  modalSubtitle: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginBottom: 20 },
+  inputLabel: { ...TYPOGRAPHY.caption, fontWeight: '700' as any, color: COLORS.text, marginBottom: 8 },
+  input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 14, ...TYPOGRAPHY.body, marginBottom: 16 },
+  modalActionRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 },
+  modalBtnCancel: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12, marginRight: 12 },
+  modalBtnCancelText: { ...TYPOGRAPHY.h3, color: COLORS.textSecondary },
+  modalBtnSave: { backgroundColor: COLORS.primary, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 12 },
+  modalBtnSaveText: { ...TYPOGRAPHY.h3, color: '#FFF' },
 });

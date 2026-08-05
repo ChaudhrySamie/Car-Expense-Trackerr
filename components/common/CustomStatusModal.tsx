@@ -9,10 +9,11 @@ interface CustomStatusModalProps {
   type: 'success' | 'error' | 'info';
   title: string;
   message: string;
+  btnText?: string;
   onClose: () => void;
 }
 
-export default function CustomStatusModal({ visible, type, title, message, onClose }: CustomStatusModalProps) {
+export default function CustomStatusModal({ visible, type, title, message, btnText = 'Dismiss', onClose }: CustomStatusModalProps) {
   const { colors } = useThemeColors();
   const scale = useRef(new Animated.Value(0)).current;
   const shake = useRef(new Animated.Value(0)).current;
@@ -59,7 +60,7 @@ export default function CustomStatusModal({ visible, type, title, message, onClo
           <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
           <TouchableOpacity onPress={onClose} style={[styles.btn, { backgroundColor: icon.color }]}>
-            <Text style={styles.btnText}>Dismiss</Text>
+            <Text style={styles.btnText}>{btnText}</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>

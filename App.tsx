@@ -27,6 +27,7 @@ import FinanceScreen from './screens/FinanceScreen';
 import FuelScreen from './screens/FuelScreen';
 import SignupScreen from './screens/SignupScreen';
 import AboutScreen from './screens/AboutScreen';
+import OnboardingScreen from './screens/OnboardingScreen';
 
 // Admin Screens
 import AdminDashboardScreen from './screens/admin/AdminDashboardScreen';
@@ -40,6 +41,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Navigation Types
 export type RootStackParamList = {
+  Onboarding: undefined;
   Login: undefined;
   Home: undefined;
   AddCar: { car?: Car } | undefined;
@@ -108,7 +110,7 @@ async function setupAnnouncementNotifications() {
 }
 
  export default function App() {
-  const { user, setUser, setLanguage, setCurrency, isDarkMode, toggleDarkMode, isDeleting, deletingMessage } = useStore();
+  const { user, setUser, setLanguage, setCurrency, isDarkMode, toggleDarkMode, isDeleting, deletingMessage, hasSeenOnboarding, setHasSeenOnboarding } = useStore();
   const { i18n } = useTranslation();
   const [settingsReady, setSettingsReady] = useState(false);
   const [authReady, setAuthReady] = useState(false);
@@ -138,8 +140,13 @@ async function setupAnnouncementNotifications() {
             toggleDarkMode();
           }
         }
+
+        const seenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+        setHasSeenOnboarding(seenOnboarding === 'true');
       } catch (error) {
         console.error("Failed to load settings:", error);
+        // Default to true on error so we don't block the user out
+        setHasSeenOnboarding(true);
       } finally {
         setSettingsReady(true);
       }
@@ -227,7 +234,9 @@ async function setupAnnouncementNotifications() {
             animation: 'slide_from_right'
           }}
         >
-          {!user ? (
+          {!hasSeenOnboarding ? (
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          ) : !user ? (
             <>
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Signup" component={SignupScreen} />

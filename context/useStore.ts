@@ -43,6 +43,8 @@ interface AppState {
   startDeleting: (msg?: string) => void;
   stopDeleting: () => void;
   clearState: () => void;
+  hasSeenOnboarding: boolean;
+  setHasSeenOnboarding: (seen: boolean) => void;
 }
 
 const MIN_DELETE_LOADER_DURATION = 700;
@@ -109,4 +111,6 @@ export const useStore = create<AppState>((set, get) => ({
     deleteStartedAt: null,
     deleteSession: 0,
   }),
+  hasSeenOnboarding: false,
+  setHasSeenOnboarding: (seen) => set({ hasSeenOnboarding: seen }),
 }));

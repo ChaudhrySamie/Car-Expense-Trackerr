@@ -78,7 +78,7 @@ export default function FuelScreen() {
 
   const handleSaveFuel = async () => {
      if (!date || !liters || !totalPrice || !odometer) {
-       setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: 'Please fill all mandatory fields (*)' });
+       setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('common.fill_mandatory') });
        return;
      }
 
@@ -147,9 +147,9 @@ export default function FuelScreen() {
     setConfirmModal({ visible: false, id: '' });
     try {
        await deleteExpenseFromDb(id);
-       setStatusModal({ visible: true, type: 'success', title: 'Deleted', message: 'Log removed' });
+       setStatusModal({ visible: true, type: 'success', title: t('common.success'), message: t('common.deleted') });
     } catch (error) {
-      setStatusModal({ visible: true, type: 'error', title: 'Error', message: 'Failed to delete' });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('common.delete_failed') });
     }
   };
 
@@ -331,7 +331,7 @@ export default function FuelScreen() {
               <View style={styles.modalHeader}>
                  <View>
                    <Text style={[styles.modalTitle, { color: colors.text }]}>{editingLogId ? t('fuel.edit_refuel') : t('fuel.refuel_log')}</Text>
-                   <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>Update your fuel records</Text>
+                   <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>{t('fuel.update_fuel_records')}</Text>
                  </View>
                 <TouchableOpacity onPress={() => setModalVisible(false)}>
                   <Ionicons name="close" size={24} color={colors.text} />
@@ -341,7 +341,7 @@ export default function FuelScreen() {
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                  <View style={styles.formGroup}>
                    <CustomDatePicker 
-                     label="Date *" 
+                     label={`${t('common.date')} *`} 
                      value={date} 
                      onChange={setDate} 
                    />
@@ -369,25 +369,25 @@ export default function FuelScreen() {
 
                 <View style={styles.row}>
                   <View style={[styles.formGroup, { flex: 1, marginRight: 12 }]}>
-                    <Text style={[styles.label, { color: colors.text }]}>Liters *</Text>
+                    <Text style={[styles.label, { color: colors.text }]}>{t('fuel.liters_input')} *</Text>
                     <TextInput style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]} keyboardType="numeric" maxLength={6} value={liters} onChangeText={(val) => handlePriceCalc(val, pricePerLiter)} placeholder="0.0" placeholderTextColor={colors.textSecondary} />
                   </View>
                   <View style={[styles.formGroup, { flex: 1 }]}>
-                    <Text style={[styles.label, { color: colors.text }]}>Rate/Ltr</Text>
-                    <TextInput style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]} keyboardType="numeric" maxLength={6} value={pricePerLiter} onChangeText={(val) => handlePriceCalc(liters, val)} placeholder="Optional" placeholderTextColor={colors.textSecondary} />
+                    <Text style={[styles.label, { color: colors.text }]}>{t('fuel.rate_ltr_input')}</Text>
+                    <TextInput style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]} keyboardType="numeric" maxLength={6} value={pricePerLiter} onChangeText={(val) => handlePriceCalc(liters, val)} placeholder={t('fuel.optional')} placeholderTextColor={colors.textSecondary} />
                   </View>
                 </View>
 
                 <View style={styles.formGroup}>
-                  <Text style={[styles.label, { color: colors.text }]}>Total Price ({currency}) *</Text>
-                  <TextInput style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]} keyboardType="numeric" maxLength={9} value={totalPrice} onChangeText={setTotalPrice} placeholder="Auto or Manual" placeholderTextColor={colors.textSecondary} />
+                  <Text style={[styles.label, { color: colors.text }]}>{t('fuel.total_price_input')} ({currency}) *</Text>
+                  <TextInput style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border }]} keyboardType="numeric" maxLength={9} value={totalPrice} onChangeText={setTotalPrice} placeholder={t('fuel.auto_manual')} placeholderTextColor={colors.textSecondary} />
                 </View>
 
                  <View style={styles.formGroup}>
                    <Text style={[styles.label, { color: colors.text }]}>{t('fuel.odometer')} (km) *</Text>
                    <View style={[styles.inputWithIcon, { backgroundColor: colors.background, borderColor: colors.border }]}>
                      <Ionicons name="speedometer-outline" size={20} color={colors.primary} style={{ marginRight: 12 }} />
-                     <TextInput style={[styles.inputFlex, { color: colors.text }]} keyboardType="numeric" maxLength={8} value={odometer} onChangeText={setOdometer} placeholder="Current reading" placeholderTextColor={colors.textSecondary} />
+                     <TextInput style={[styles.inputFlex, { color: colors.text }]} keyboardType="numeric" maxLength={8} value={odometer} onChangeText={setOdometer} placeholder={t('fuel.current_reading')} placeholderTextColor={colors.textSecondary} />
                    </View>
                  </View>
 

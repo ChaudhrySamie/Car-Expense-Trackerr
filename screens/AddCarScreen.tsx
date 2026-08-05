@@ -59,7 +59,7 @@ export default function AddCarScreen() {
         visible: true,
         type: 'error',
         title: t('common.error'),
-        message: t('common.fill_fields', { defaultValue: 'Please complete the vehicle name, model, and year.' })
+        message: t('common.fill_fields')
       });
       return;
     }
@@ -70,19 +70,19 @@ export default function AddCarScreen() {
     const purchasePrice = form.purchasePrice ? Number(form.purchasePrice) : 0;
 
     if (!Number.isInteger(year) || year < 1886 || year > new Date().getFullYear() + 1) {
-      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: 'Enter a valid 4-digit manufacturing year.' });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('common.invalid_year') });
       return;
     }
     if (form.engineCC && (!Number.isFinite(engineCC) || engineCC <= 0 || engineCC > MAX_ENGINE_CC)) {
-      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: `Engine capacity must be between 1 and ${MAX_ENGINE_CC.toLocaleString()} cc.` });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('common.invalid_engine_cc', { max: MAX_ENGINE_CC.toLocaleString() }) });
       return;
     }
     if (form.mileage && (!Number.isFinite(mileage) || mileage < 0 || mileage > MAX_MILEAGE_KM)) {
-      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: `Mileage must be between 0 and ${MAX_MILEAGE_KM.toLocaleString()} km.` });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('common.invalid_mileage', { max: MAX_MILEAGE_KM.toLocaleString() }) });
       return;
     }
     if (form.purchasePrice && (!Number.isFinite(purchasePrice) || purchasePrice <= 0 || purchasePrice > MAX_PURCHASE_PRICE)) {
-      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: `Purchase price must be between 1 and ${MAX_PURCHASE_PRICE.toLocaleString()}.` });
+      setStatusModal({ visible: true, type: 'error', title: t('common.error'), message: t('common.invalid_price', { max: MAX_PURCHASE_PRICE.toLocaleString() }) });
       return;
     }
 

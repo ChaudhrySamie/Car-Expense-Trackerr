@@ -70,6 +70,13 @@ export const SHADOWS = {
     shadowRadius: 20,
     elevation: 8,
   },
+  large: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.2,
+    shadowRadius: 30,
+    elevation: 12,
+  },
 };
 
 export const TYPOGRAPHY = {
