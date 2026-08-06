@@ -36,6 +36,12 @@
           "color": "#ffffff"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "3ba8df2c-c896-45a0-a478-64b5f3d559e0"
+      }
+    },
+    "owner": "chaudhrysamie"
   }
 }
