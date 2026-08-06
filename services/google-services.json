@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "812871168046",
+    "project_id": "mile-mint-e3d68",
+    "storage_bucket": "mile-mint-e3d68.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:812871168046:android:dbc52340ba9fe885d2efbf",
+        "android_client_info": {
+          "package_name": "com.chaudhrysamie.milemint"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDI66nV78VnTSRw5Jg6S3_YJTeGyeqNwuE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
