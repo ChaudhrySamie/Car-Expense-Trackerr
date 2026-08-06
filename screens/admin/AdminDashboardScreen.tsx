@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {  View, Text, StyleSheet,  TouchableOpacity, ScrollView, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform  } from 'react-native';
+import {  View, Text, StyleSheet,  TouchableOpacity, ScrollView, ActivityIndicator, Modal, TextInput, Keyboard, Platform  } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +9,27 @@ import Header from '../../components/common/Header';
 import AnimatedCard from '../../components/common/AnimatedCard';
 import { COLORS, SHADOWS, TYPOGRAPHY } from '../../utils/theme';
 import { PieChart } from 'react-native-gifted-charts';
+
+function useKeyboardHeight() {
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  return keyboardHeight;
+}
 
 export default function AdminDashboardScreen() {
   const navigation = useNavigation<any>();
@@ -26,6 +47,7 @@ export default function AdminDashboardScreen() {
   const [versionModalVisible, setVersionModalVisible] = useState(false);
   const [versionForm, setVersionForm] = useState({ latestVersion: '', updateMessage: '', downloadUrl: '' });
   const [savingVersion, setSavingVersion] = useState(false);
+  const keyboardHeight = useKeyboardHeight();
 
   const loadVersionConfig = async () => {
     try {
@@ -290,9 +312,28 @@ export default function AdminDashboardScreen() {
       </ScrollView>
 
       {/* Version Control Modal */}
-      <Modal visible={versionModalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ width: '100%' }}>
+      <Modal
+        visible={versionModalVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setVersionModalVisible(false)}
+      >
+        <View style={styles.versionModalOverlay}>
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={1}
+            onPress={() => setVersionModalVisible(false)}
+          />
+          <ScrollView
+            style={{ flexGrow: 0 }}
+            contentContainerStyle={{
+              paddingHorizontal: 24,
+              paddingBottom: keyboardHeight > 0 ? keyboardHeight + 16 : 24,
+            }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Update App Version</Text>
               <Text style={styles.modalSubtitle}>Notify users if they are on an old version.</Text>
@@ -331,7 +372,7 @@ export default function AdminDashboardScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </KeyboardAvoidingView>
+          </ScrollView>
         </View>
       </Modal>
     </SafeAreaView>
@@ -364,6 +405,7 @@ const styles = StyleSheet.create({
   menuTitle: { ...TYPOGRAPHY.h2, fontSize: 18, color: COLORS.text, marginBottom: 4 },
   menuDesc: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, lineHeight: 18 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  versionModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#FFF', borderRadius: 24, padding: 24, width: '100%', ...SHADOWS.large },
   modalTitle: { ...TYPOGRAPHY.h2, color: COLORS.text, marginBottom: 8 },
   modalSubtitle: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginBottom: 20 },

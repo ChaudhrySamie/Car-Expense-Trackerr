@@ -6,16 +6,13 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#020B1E"
-    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "package": "com.chaudhrysamie.milemint",
+      "softwareKeyboardLayoutMode": "resize",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/icon.png"
@@ -25,6 +22,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#020B1E",
+          "image": "./assets/icon.png",
+          "imageWidth": 96
+        }
+      ],
       "expo-font",
       "expo-asset",
       "@react-native-community/datetimepicker",
@@ -33,11 +38,20 @@
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#ffffff"
+          "color": "#ffffff",
+          "defaultChannel": "default"
         }
       ]
     ],
     "extra": {
+      "firebase": {
+        "apiKey": "AIzaSyAYran1D1dEXlPd5Z7Ff-KUOsR9YmlYgDY",
+        "authDomain": "car-expense-tracker-6b0b2.firebaseapp.com",
+        "projectId": "car-expense-tracker-6b0b2",
+        "storageBucket": "car-expense-tracker-6b0b2.firebasestorage.app",
+        "messagingSenderId": "122623897969",
+        "appId": "1:122623897969:web:122501e4a48f3c29c146d0"
+      },
       "eas": {
         "projectId": "3ba8df2c-c896-45a0-a478-64b5f3d559e0"
       }

@@ -247,8 +247,8 @@ export default function CarDoctorModal({
     >
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 12 : 0}
+        behavior="padding"
+        keyboardVerticalOffset={0}
       >
         <Pressable
           style={StyleSheet.absoluteFill}
@@ -363,7 +363,7 @@ export default function CarDoctorModal({
               contentContainerStyle={bodyContentStyle}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="interactive"
+              keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
             >
               {isLimitReached ? (
                 <View style={[styles.limitReachedBox, { backgroundColor: isDarkMode ? '#1c1917' : '#FFF7ED', borderColor: isDarkMode ? '#78350f' : '#FED7AA' }]}>

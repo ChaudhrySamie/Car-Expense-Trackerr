@@ -55,16 +55,64 @@ export default function AdminNotificationScreen() {
     }
     setSaving(true);
     try {
+      // ─── STEP 6: Send real push notifications via Expo Push API ───
+      // Fetch all registered user tokens from Firestore
+      const usersSnap = await db.collection('users')
+        .where('expoPushToken', '!=', null)
+        .get();
+
+      const tokens: string[] = usersSnap.docs
+        .map(doc => doc.data().expoPushToken)
+        .filter((t: any) => typeof t === 'string' && t.startsWith('ExponentPushToken'));
+
+      console.log(`[Push Broadcast] Sending to ${tokens.length} device(s)`);
+
+      // Expo Push API accepts up to 100 messages per request
+      const BATCH_SIZE = 100;
+      for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
+        const batch = tokens.slice(i, i + BATCH_SIZE);
+        const messages = batch.map(token => ({
+          to: token,
+          sound: 'default',
+          title: 'Mile Mint',
+          body: message.trim(),
+          data: { type: 'broadcast', targetVersion: targetVersion.trim() || null },
+          channelId: 'default',
+        }));
+
+        const response = await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Accept-Encoding': 'gzip, deflate',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(messages),
+        });
+
+        const result = await response.json();
+        console.log('[Push Broadcast] Expo API response:', JSON.stringify(result));
+      }
+
+      // Save the broadcast record to Firestore for in-app display
       await db.collection('global_notifications').add({
         message: message.trim(),
         targetVersion: targetVersion.trim() || null,
         active: true,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        recipientCount: tokens.length,
       });
+
       setMessage('');
       setTargetVersion('');
-      setStatusModal({ visible: true, type: 'success', title: 'Sent Broadcast', msg: 'Notification is now live for users.' });
+      setStatusModal({
+        visible: true,
+        type: 'success',
+        title: 'Sent Broadcast',
+        msg: `Push sent to ${tokens.length} device(s) and notification is now live.`,
+      });
     } catch (e: any) {
+      console.error('[Push Broadcast] Error:', e);
       setStatusModal({ visible: true, type: 'error', title: 'Error', msg: e.message });
     } finally {
       setSaving(false);

@@ -12,9 +12,21 @@ import { I18nManager, Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-
-import firebase, { auth, db } from './services/firebase';
+import { auth, db } from './services/firebase';
 import { useStore, Car } from './context/useStore';
+
+// ─── STEP 3: Notification Handler — must be at module level, outside any component ───
+// Without this, foreground notifications are silently swallowed by the OS.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
 
 // Screens
 import LoginScreen from './screens/LoginScreen';
@@ -59,53 +71,71 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-async function setupAnnouncementNotifications() {
-  if (Platform.OS === 'web' || !Device.isDevice) {
-    return;
+async function registerForPushNotifications(userId: string): Promise<string | null> {
+  // Must be a real device — simulators/emulators cannot receive push notifications
+  if (!Device.isDevice) {
+    console.warn('[Push] Not a physical device — push notifications unavailable.');
+    return null;
   }
 
-  try {
-    const { status } = await Notifications.getPermissionsAsync();
-    let finalStatus = status;
+  if (Platform.OS === 'web') {
+    return null;
+  }
 
-    if (status !== 'granted') {
-      const permission = await Notifications.requestPermissionsAsync();
-      finalStatus = permission.status;
-    }
-
-    if (finalStatus !== 'granted') {
-      return;
-    }
-
-    const isExpoGo = Constants.appOwnership === 'expo';
-    
-    if (isExpoGo) {
-      console.log('Skipping remote push setup — not supported in Expo Go. Use a development build to test this.');
-      return;
-    }
-
-    const messagingService = (firebase as any).messaging?.();
-    if (!messagingService?.subscribeToTopic || !messagingService?.onMessage) {
-      return;
-    }
-
-    await messagingService.subscribeToTopic('announcements');
-
-    messagingService.onMessage(async (remoteMessage: any) => {
-      const title = remoteMessage?.notification?.title || 'Announcement';
-      const body = remoteMessage?.notification?.body || 'A new announcement is available.';
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title,
-          body,
-          data: { type: 'announcement', remoteMessage },
-        },
-        trigger: null,
-      });
+  // ─── STEP 4: Android Notification Channel (required on Android 8+ / API 26+) ───
+  // Without a channel, Android has no visual container to display the notification.
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Default Notifications',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+      sound: 'default',
     });
+    console.log('[Push] Android notification channel created.');
+  }
+
+  // ─── Permission request ───
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+
+  if (existingStatus !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+
+  if (finalStatus !== 'granted') {
+    console.warn('[Push] Notification permission denied.');
+    return null;
+  }
+
+  // ─── STEP 2: Get Expo Push Token with correct projectId ───
+  // projectId is required on SDK 49+; omitting it causes silent token failure.
+  try {
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      Constants.easConfig?.projectId;
+
+    if (!projectId) {
+      console.error('[Push] No EAS projectId found in app.json extra.eas.projectId — token generation will fail.');
+      return null;
+    }
+
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+    const token = tokenData.data;
+    console.log('[Push] Expo push token:', token);
+
+    // ─── STEP 7: Save token to Firestore so it can be used for targeted sends ───
+    await db.collection('users').doc(userId).update({
+      expoPushToken: token,
+      tokenUpdatedAt: new Date().toISOString(),
+    });
+    console.log('[Push] Token saved to Firestore for user:', userId);
+
+    return token;
   } catch (error) {
-    console.error('Failed to configure announcement notifications:', error);
+    console.error('[Push] Failed to get Expo push token:', error);
+    return null;
   }
 }
 
@@ -206,16 +236,16 @@ async function setupAnnouncementNotifications() {
   }, []);
 
   useEffect(() => {
-    if (authReady && settingsReady) {
-      setupAnnouncementNotifications();
+    if (authReady && settingsReady && user?.uid) {
+      registerForPushNotifications(user.uid);
     }
-  }, [authReady, settingsReady]);
+  }, [authReady, settingsReady, user?.uid]);
 
   if (!settingsReady || !authReady) {
     return (
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <StatusBar style="light" />
+          <StatusBar style="light" translucent backgroundColor="transparent" />
           <AppSplashScreen />
         </GestureHandlerRootView>
       </SafeAreaProvider>

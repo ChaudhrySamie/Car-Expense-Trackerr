@@ -29,7 +29,7 @@ export default function AppSplashScreen() {
 }
 
 const styles = StyleSheet.create({
-  background: { flex: 1 },
+  background: { flex: 1, width: '100%', height: '100%', backgroundColor: '#020B1E' },
   loadingArea: { position: 'absolute', left: 0, right: 0, bottom: 34, alignItems: 'center' },
   loadingPill: { width: 124, paddingHorizontal: 14, paddingVertical: 11, borderRadius: 18, backgroundColor: 'rgba(2, 11, 30, 0.58)', borderWidth: 1, borderColor: 'rgba(125, 244, 219, 0.3)' },
   track: { height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: 'rgba(255, 255, 255, 0.22)' },
